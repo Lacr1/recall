@@ -17,3 +17,5 @@ spikes/**/.shown
 resources/voice/kws/
 resources/voice/asr/
 resources/voice/silero_vad.onnx
+# Daily EOD logs stay local
+docs/eods/
