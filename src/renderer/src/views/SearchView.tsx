@@ -193,6 +193,7 @@ export function SearchView({
       <div className="search-header">
         {home && (
           <div className="home-intro">
+            <div className="home-mascot" aria-hidden="true" />
             {noFolders ? (
               <h2>Recall doesn’t have any folders yet</h2>
             ) : (

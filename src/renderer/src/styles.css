@@ -571,6 +571,25 @@ span.status-item {
   text-align: center;
 }
 
+/* Six-frame sprite sheet. The resting position is frame 4 (found it), which is what
+   reduced motion shows, since the global reduced-motion rule removes the animation. */
+.home-mascot {
+  width: clamp(96px, 18vh, 150px);
+  aspect-ratio: 320 / 328;
+  background: url('./assets/mascot-search.png') 60% 0 / 600% 100% no-repeat;
+  animation: mascot-search 2.4s infinite;
+}
+
+@keyframes mascot-search {
+  0% { background-position: 0% 0; animation-timing-function: step-end; }
+  14% { background-position: 20% 0; animation-timing-function: step-end; }
+  28% { background-position: 40% 0; animation-timing-function: step-end; }
+  42% { background-position: 60% 0; animation-timing-function: step-end; }
+  56% { background-position: 80% 0; animation-timing-function: step-end; }
+  86% { background-position: 100% 0; animation-timing-function: step-end; }
+  100% { background-position: 100% 0; }
+}
+
 .home-intro h2 {
   font-size: 44px;
   line-height: 1.15;

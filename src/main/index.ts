@@ -16,6 +16,7 @@ import { isInsideRoot, isSafeLocalPath, isSafeToOpen } from '../engine/paths'
 import { RENDERER_METHODS } from '../shared/constants'
 import type { AskEvent, FolderSuggestion, SuggestedFolderId } from '../shared/types'
 import { MIC_PROBLEM_CODES, type MicProblemCode } from '../shared/voice'
+import appIcon from '../../build/icon.png?asset'
 
 // Main never needs the network itself; the renderer's requests are filtered separately in hardenSession().
 installNetworkGuard('main')
@@ -174,6 +175,7 @@ function createWindow(): void {
     frame: false,
     show: false,
     title: 'Recall',
+    icon: appIcon,
     // Matches --bg so the splash appears without a light flash in dark mode.
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#151617' : '#f7f7f5',
     autoHideMenuBar: true,
