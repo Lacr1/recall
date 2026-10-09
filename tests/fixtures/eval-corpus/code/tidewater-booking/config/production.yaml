@@ -1,0 +1,14 @@
+port: 4010
+payment:
+  webhookToleranceSeconds: 300
+smtp:
+  host: smtp.tidewaterlabs.se
+  port: 587
+  from: "Acme Outdoor bookings <bookings@acme-outdoor.se>"
+sms:
+  provider: textbridge.example
+  sender: ACMEOUTDOOR
+features:
+  waitlist: true
+  groupBookings: false
+  pickupPoints: false

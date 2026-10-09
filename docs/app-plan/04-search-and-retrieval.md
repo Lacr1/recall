@@ -184,6 +184,7 @@ File type (by kind/extension), folder, modified-date range — applied as SQL pr
 
 - **Exact duplicates** (same SHA-256): one result, "N copies", all paths listed in the evidence pane; the primary path shown is the most recently modified copy. MVP.
 - **Near-duplicates / versions** (Stage 4): MinHash signatures over word 5-gram shingles of the extracted text + file-name stem similarity (strip `v2`, `final`, `copy`, `(1)`, dates). Files above a Jaccard threshold (tuned on fixture versions; starting 0.6) in related folders form a version group. Results show the best-matching member with "3 versions" and a newest-first list; the eval's version queries measure whether the *intended* version ranks first.
+  > **Stage 4 result:** heavily edited short versions share little 5-gram text, so the shipped rule is tiered by name agreement, with the file-name index as a second candidate source next to LSH. See [s4-search.md](../validation/s4-search.md) for the thresholds and how they were tuned.
 
 ### 6.5 Confidence and no-match behaviour
 
@@ -198,6 +199,8 @@ Scores are not probabilities, so confidence is a **rule over observable signals*
 Initial rule: **low confidence** if `kw_cov < 0.5` **and** `s_vec < τ` **and not** `agree`. In keyword-only mode: low confidence if `kw_cov < 0.5`. **τ is not guessed**: the eval script computes the τ that meets the Stage 4 targets (negative-query flag rate ≥ 0.70, positive false-flag rate ≤ 0.10) on the tuning split, per embedding model (cosine distributions differ by model), and stores it with the embedding space. Until calibrated (Stage 1), the low-confidence UI is disabled rather than driven by an arbitrary number.
 
 No-match: zero candidates in all lists → no-match state ([02 §5.6](02-ux-and-user-flows.md)).
+
+> **Stage 4 result:** this initial rule could not flag 70% of negative queries at any τ on the Stage 4 eval set. The shipped rule is "top result lacks some query words **and** cosine < τ", τ = 0.60 for nomic-embed-text. See [s4-search.md](../validation/s4-search.md).
 
 ### 6.6 Recency and temporal intent (Stage 4)
 

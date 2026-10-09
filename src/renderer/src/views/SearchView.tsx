@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import type { AppStatus, SearchResponse, SearchResult } from '../../../shared/types'
+import type { AppStatus, Evidence, SearchFilters, SearchResponse, SearchResult } from '../../../shared/types'
 import type { View } from '../App'
 import { FileBadge, Highlighted } from '../components'
 import { formatDate, plural, shortFolder } from '../format'
 import { addRecent, clearRecent, loadRecent, removeRecent } from '../recent'
 import { DocumentPanel } from './DocumentPanel'
+import { FilterBar, hasActiveFilters } from './FilterBar'
 import { indexingLabel } from './StatusBar'
 
 const EXAMPLES = ['proposal with a 50% initial payment', 'notes about improving the booking system', 'where I implemented authentication']
@@ -31,12 +32,15 @@ export function SearchView({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
   const [selected, setSelected] = useState(0)
-  const [detailFileId, setDetailFileId] = useState<number>()
+  const [detail, setDetail] = useState<{ fileId: number; evidence: Evidence[]; chunkId?: number }>()
+  const [filters, setFilters] = useState<SearchFilters>({})
+  // The user removed the chips the query's time words produced; reset when the search box is cleared.
+  const [ignoreTemporal, setIgnoreTemporal] = useState(false)
   const [notice, setNotice] = useState<string>()
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
-  const run = useCallback(async (q: string) => {
+  const run = useCallback(async (q: string, f: SearchFilters) => {
     if (!q.trim()) {
       setResponse(undefined)
       return
@@ -45,7 +49,7 @@ export function SearchView({
     setLoading(true)
     setError(undefined)
     try {
-      const res = await window.recall.search(id, q)
+      const res = await window.recall.search(id, q, f)
       if (id !== requestCounter || !res) return
       setResponse(res)
       setSelected(0)
@@ -60,17 +64,30 @@ export function SearchView({
     if (initialQuery) setQuery(initialQuery.text)
   }, [initialQuery?.n])
 
-  // Debounced search-as-you-type.
   useEffect(() => {
-    const t = setTimeout(() => void run(query), 250)
+    if (!query.trim()) setIgnoreTemporal(false)
+  }, [query])
+  const searchFilters: SearchFilters = ignoreTemporal ? { ...filters, ignoreTemporal } : filters
+
+  // Debounced search-as-you-type; a filter change searches again at once.
+  const lastQuery = useRef(query)
+  useEffect(() => {
+    const typed = lastQuery.current !== query
+    lastQuery.current = query
+    const t = setTimeout(() => void run(query, searchFilters), typed ? 250 : 0)
     return () => clearTimeout(t)
-  }, [query, run])
+  }, [query, filters, ignoreTemporal, run])
 
   // Refresh results when indexing finishes more files, so new matches appear.
   const doneCount = status.progress.readDone + status.progress.embedDone
   useEffect(() => {
-    if (query.trim()) void run(query)
+    if (query.trim()) void run(query, searchFilters)
   }, [doneCount > 0 ? Math.floor(doneCount / 25) : 0])
+
+  // A folder filter stops applying once that folder is removed from Recall.
+  useEffect(() => {
+    if (filters.folderId !== undefined && !status.folders.some((f) => f.id === filters.folderId)) setFilters({ ...filters, folderId: undefined })
+  }, [status.folders])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -241,6 +258,15 @@ export function SearchView({
             <button className="link" onClick={() => setNotice(undefined)}>Dismiss</button>
           </div>
         )}
+        {!home && (
+          <FilterBar
+            filters={filters}
+            onChange={setFilters}
+            folders={status.folders}
+            temporal={ignoreTemporal ? undefined : response?.temporal}
+            onDropTemporal={() => setIgnoreTemporal(true)}
+          />
+        )}
         {home &&
           (noFolders ? (
             <button className="btn btn-primary" onClick={() => onNavigate('folders')}>Add a folder</button>
@@ -303,6 +329,7 @@ export function SearchView({
                 <h3>No files matched “{response.query}”</h3>
                 <ul className="muted">
                   <li>Try fewer or different words.</li>
+                  {(hasActiveFilters(filters) || response.temporal) && <li>Remove a filter to search more files.</li>}
                   {response.mode === 'keyword' && <li>Turn on local AI to search by meaning.</li>}
                   {idx.busy && <li>Some files are still being indexed.</li>}
                 </ul>
@@ -325,6 +352,7 @@ export function SearchView({
                     <FileBadge ext={r.primary.ext} />
                     <span className="result-name">{r.primary.name}</span>
                     {r.copies.length > 0 && <span className="pill">{r.copies.length + 1} copies</span>}
+                    {r.versions.length > 0 && <span className="pill">{r.versions.length + 1} versions</span>}
                   </div>
                   <div className="result-sub">
                     <span className="mono">{shortFolder(r.primary.path)}</span> · {formatDate(r.primary.mtimeMs)}
@@ -355,7 +383,7 @@ export function SearchView({
                     <button className="btn btn-primary" onClick={() => void open(current)}>Open</button>
                     <button className="btn" onClick={() => void reveal(current)}>Show in folder</button>
                     <button className="btn" onClick={() => void window.recall.copyPath(current.primary.fileId)}>Copy path</button>
-                    <button className="btn" onClick={() => setDetailFileId(current.primary.fileId)}>Details</button>
+                    <button className="btn" onClick={() => setDetail({ fileId: current.primary.fileId, evidence: current.evidence })}>Details</button>
                   </div>
                 </div>
                 <h3 className="section-label">Why it matched</h3>
@@ -366,12 +394,51 @@ export function SearchView({
                   {current.reasons.length === 0 && <li>Closest available match</li>}
                 </ul>
                 <h3 className="section-label">Passages</h3>
-                {current.evidence.map((ev) => (
-                  <blockquote key={ev.chunkId} className="passage">
-                    {ev.location && <div className="passage-loc">{ev.location}</div>}
-                    <Highlighted text={ev.snippet} ranges={ev.highlights} />
-                  </blockquote>
-                ))}
+                {current.evidence.map((ev, i) => {
+                  const show = () => setDetail({ fileId: current.primary.fileId, evidence: current.evidence, chunkId: ev.chunkId })
+                  return (
+                    // The button is the keyboard route; clicking anywhere on the passage is a mouse shortcut.
+                    <blockquote key={ev.chunkId} className="passage" onClick={show}>
+                      <div className="passage-loc">
+                        <span>{ev.location ?? `Passage ${i + 1}`}</span>
+                        <button
+                          className="link"
+                          aria-label={`Show in document, passage ${i + 1}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            show()
+                          }}
+                        >
+                          Show in document
+                        </button>
+                      </div>
+                      <Highlighted text={ev.snippet} ranges={ev.highlights} />
+                    </blockquote>
+                  )
+                })}
+                {current.versions.length > 0 && (
+                  <>
+                    <h3 className="section-label">Versions, newest first</h3>
+                    <ul className="versions">
+                      {[current.primary, ...current.versions]
+                        .sort((a, b) => b.mtimeMs - a.mtimeMs)
+                        .map((v) => (
+                          <li key={v.fileId} className={v.fileId === current.primary.fileId ? 'current' : ''}>
+                            <span className="versions-name">
+                              {v.name}
+                              {v.fileId === current.primary.fileId && <span className="muted"> (shown)</span>}
+                            </span>
+                            <span className="small muted">{formatDate(v.mtimeMs)}</span>
+                            {v.fileId !== current.primary.fileId && (
+                              <button className="link" aria-label={`Details of ${v.name}`} onClick={() => setDetail({ fileId: v.fileId, evidence: [] })}>
+                                Details
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                    </ul>
+                  </>
+                )}
                 {current.copies.length > 0 && (
                   <>
                     <h3 className="section-label">Also at</h3>
@@ -392,8 +459,14 @@ export function SearchView({
         </div>
       )}
 
-      {detailFileId !== undefined && (
-        <DocumentPanel fileId={detailFileId} query={query} onClose={() => setDetailFileId(undefined)} />
+      {detail && (
+        <DocumentPanel
+          fileId={detail.fileId}
+          query={query}
+          evidence={detail.evidence}
+          startChunkId={detail.chunkId}
+          onClose={() => setDetail(undefined)}
+        />
       )}
     </div>
   )
@@ -468,5 +541,11 @@ function reasonText(reason: SearchResult['reasons'][number]): string {
       return `Similar meaning${reason.location ? ` (${reason.location})` : ''}`
     case 'filename':
       return 'File name match'
+    case 'newest':
+      return 'Most recently modified'
+    case 'filters':
+      return 'Matches your filters'
+    case 'versions':
+      return reason.newest ? `Newest of ${reason.count} versions` : `One of ${reason.count} versions`
   }
 }

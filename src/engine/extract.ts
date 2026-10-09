@@ -27,24 +27,41 @@ export class ExtractError extends Error {
 
 const MAX_CHARS = 2_000_000
 const TIMEOUT_MS = 60_000
+// OCR is slow on a CPU (seconds per page), so scans get longer and are read up to a page limit.
+const OCR_TIMEOUT_MS = 5 * 60_000
+const OCR_MAX_PAGES = 30
 
-export async function extractFile(filePath: string, kind: Kind): Promise<ExtractResult> {
+export interface ExtractOptions {
+  /** S4-06: read images and PDFs without a text layer with OCR. */
+  ocr?: boolean
+}
+
+export async function extractFile(filePath: string, kind: Kind, opts: ExtractOptions = {}): Promise<ExtractResult> {
   let timer: NodeJS.Timeout | undefined
+  const ms = opts.ocr && (kind === 'image' || kind === 'pdf') ? OCR_TIMEOUT_MS : TIMEOUT_MS
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new ExtractError('timeout')), TIMEOUT_MS)
+    timer = setTimeout(() => reject(new ExtractError('timeout')), ms)
   })
   try {
-    return await Promise.race([extractByKind(filePath, kind), timeout])
+    return await Promise.race([extractByKind(filePath, kind, opts), timeout])
   } finally {
     clearTimeout(timer)
   }
 }
 
-async function extractByKind(filePath: string, kind: Kind): Promise<ExtractResult> {
+async function extractByKind(filePath: string, kind: Kind, opts: ExtractOptions): Promise<ExtractResult> {
   const buf = await readFile(filePath)
   switch (kind) {
+    case 'image':
+      if (!opts.ocr) throw new ExtractError('no_text', 'OCR is off')
+      return extractImage(buf)
     case 'pdf':
-      return extractPdf(buf)
+      try {
+        return await extractPdf(buf)
+      } catch (err) {
+        if (opts.ocr && err instanceof ExtractError && err.code === 'no_text') return ocrPdf(buf)
+        throw err
+      }
     case 'docx':
       return extractDocx(buf)
     case 'markdown':
@@ -207,6 +224,52 @@ async function extractPdf(buf: Buffer): Promise<ExtractResult> {
       // Metadata is optional.
     }
     return fromBlocks({ text, blocks, title, pageCount: doc.numPages })
+  } finally {
+    await task.destroy()
+  }
+}
+
+// ---------- OCR (S4-06) ----------
+
+async function extractImage(buf: Buffer): Promise<ExtractResult> {
+  const { recognize } = await import('./ocr')
+  const text = reflowPdfPage(normalize(await recognize(buf))).trim()
+  if (!text) throw new ExtractError('no_text', 'No text found in the image')
+  return fromBlocks(splitParagraphs(text))
+}
+
+/** A scanned PDF: each page rendered to an image (pdf.js with @napi-rs/canvas) and read with OCR. */
+async function ocrPdf(buf: Buffer): Promise<ExtractResult> {
+  const pdfjs = await loadPdfJs()
+  const { recognize } = await import('./ocr')
+  const task = pdfjs.getDocument({ data: new Uint8Array(buf), disableFontFace: true, useSystemFonts: false, verbosity: 0 })
+  let doc
+  try {
+    doc = await task.promise
+  } catch {
+    throw new ExtractError('corrupt')
+  }
+  try {
+    let text = ''
+    const blocks: Block[] = []
+    const pages = Math.min(doc.numPages, OCR_MAX_PAGES)
+    for (let p = 1; p <= pages; p++) {
+      const page = await doc.getPage(p)
+      // About 200 dpi: enough for body text, small enough to keep OCR quick.
+      const viewport = page.getViewport({ scale: 200 / 72 })
+      // In Node, pdf.js's canvas factory draws with @napi-rs/canvas.
+      const factory = doc.canvasFactory as { create(w: number, h: number): { canvas: { toBuffer(type: string): Buffer }; context: unknown } }
+      const { canvas, context } = factory.create(Math.ceil(viewport.width), Math.ceil(viewport.height))
+      await page.render({ canvas, canvasContext: context, viewport } as unknown as Parameters<typeof page.render>[0]).promise
+      const pageText = reflowPdfPage(normalize(await recognize(canvas.toBuffer('image/png')))).trim()
+      page.cleanup()
+      if (!pageText) continue
+      if (text) text += '\n\n'
+      blocks.push(...splitParagraphs(pageText, p, text.length).blocks)
+      text += pageText
+    }
+    if (!text.trim()) throw new ExtractError('no_text', 'No text found by OCR')
+    return fromBlocks({ text, blocks, pageCount: doc.numPages })
   } finally {
     await task.destroy()
   }

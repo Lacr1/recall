@@ -1,0 +1,14 @@
+INVOICE 2025-088
+Maya Lindqvist Consulting, Uppsala, Sweden. VAT no. SE870412441701
+Date: 2025-07-04
+Bill to: Orchid Logistics AB
+Industrigatan 41, Norrkoping
+
+Warehouse KPI dashboards: milestone 1, design sign-off (30%)     EUR 4,650.00
+
+Subtotal: EUR 4,650.00
+VAT 25%: EUR 1,162.50
+Total due: EUR 5,812.50
+
+Payment due within 30 days. Bank transfer to IBAN SE45 5000 0000 0583 9825 7466, BIC ESSESESS.
+Please quote the invoice number with your payment.

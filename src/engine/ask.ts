@@ -28,7 +28,7 @@ export async function runAsk(
   signal: AbortSignal,
   emit: (e: AskEvent) => void
 ): Promise<void> {
-  const { results, lowConfidence } = search.search(question, queryVec)
+  const { results, lowConfidence } = search.search(question, queryVec, { lowConfidenceRule: 'ask' })
   const top = results.slice(0, MAX_SOURCES)
   if (!top.length || lowConfidence) {
     emit({ type: 'sources', askId, sources: [] })

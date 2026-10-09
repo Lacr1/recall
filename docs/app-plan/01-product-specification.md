@@ -72,7 +72,7 @@ IDs are referenced from the roadmap and backlog.
 | ID | Requirement | Pri |
 |---|---|---|
 | FR-IDX-01 | User adds folders via the OS folder picker. Recall never indexes outside added folders. | M |
-| FR-IDX-02 | Default exclusions: hidden/system files, `node_modules`, `.git`, build output dirs, temp/lock files (`~$*.docx`), files > size cap (default 50 MB; PDFs 200 MB). User can add exclusion patterns per folder. | M |
+| FR-IDX-02 | Default exclusions: hidden/system files, `node_modules`, `.git`, build output dirs, dependency and cache dirs (`vendor`, `site-packages`, `AppData`, `temp`, `logs`), temp/lock files (`~$*.docx`), package lockfiles, minified/bundled `*.min.js`/`*.bundle.js`, files > size cap (DOCX 50 MB; PDFs 200 MB; text, Markdown and code 2 MB; `log`/`csv`/`json`/`xml`/`sql` 512 KB). Documents are read and embedded before code. User can add exclusion patterns per folder. | M |
 | FR-IDX-03 | Initial indexing runs in the background with visible progress (files found / processed / failed, current phase). | M |
 | FR-IDX-04 | Keyword search becomes available for each file as soon as its text is extracted, before embeddings finish. | M |
 | FR-IDX-05 | Detect additions, edits, renames/moves, and deletions — while running (watcher) and since last run (startup reconciliation). | M |

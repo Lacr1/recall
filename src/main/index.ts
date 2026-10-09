@@ -5,6 +5,7 @@ import { readdir, realpath, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { EngineError, EngineSupervisor } from './engine'
 import { runSmokeTest } from './smoke'
+import { passageRefs, searchFilters } from './search-params'
 import { allowPermissionCheck, allowPermissionRequest } from './permissions'
 import { VoiceController } from './voice/controller'
 import { voiceSettingsPatch } from './voice/settings'
@@ -267,15 +268,19 @@ function registerIpc(): void {
   // Engine-backed calls the renderer may make, with per-method parameter validation.
   const validators: Record<(typeof RENDERER_METHODS)[number], (p: Record<string, unknown>) => unknown> = {
     getStatus: () => ({}),
-    search: (p) => ({ requestId: int(p.requestId), query: String(p.query ?? '').slice(0, 500) }),
+    search: (p) => ({ requestId: int(p.requestId), query: String(p.query ?? '').slice(0, 500), filters: searchFilters(p.filters) }),
     getSearchSuggestions: () => ({}),
-    getDocument: (p) => ({ fileId: int(p.fileId) }),
+    getDocument: (p) => ({ fileId: int(p.fileId), passages: passageRefs(p.passages) }),
     listFailures: () => ({}),
     removeFolder: (p) => ({ folderId: int(p.folderId) }),
     rescanFolder: (p) => ({ folderId: int(p.folderId) }),
     retryFailed: () => ({}),
     setPaused: (p) => ({ paused: p.paused === true }),
     pullModel: () => ({}),
+    listEmbedModels: () => ({}),
+    setEmbedModel: (p) => ({ model: String(p.model ?? '').slice(0, 200) }),
+    cancelEmbedModelChange: () => ({}),
+    setOcr: (p) => ({ on: p.on === true }),
     ask: (p) => ({ askId: int(p.askId), question: String(p.question ?? '').slice(0, 1000) }),
     cancelAsk: (p) => ({ askId: int(p.askId) }),
     deleteAllData: () => ({})

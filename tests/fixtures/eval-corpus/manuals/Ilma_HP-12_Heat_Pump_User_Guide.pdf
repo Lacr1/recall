@@ -1,0 +1,64 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 1184 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Ilma HP-12 Air-to-Air Heat Pump - User Guide) Tj T*
+() Tj T*
+(Operating modes) Tj T*
+(Heat, cool, dry and fan. In heat mode the outdoor unit works down to minus 25 degrees.) Tj T*
+(Below minus 15 degrees the heating capacity drops; keep a backup heater for very cold) Tj T*
+(nights.) Tj T*
+() Tj T*
+(Defrosting) Tj T*
+(In cold, humid weather the outdoor unit collects ice. The pump defrosts automatically) Tj T*
+(for 5 to 10 minutes; the indoor fan stops and a white cloud of steam from the outdoor) Tj T*
+(unit is normal.) Tj T*
+() Tj T*
+(Filters) Tj T*
+(Vacuum the indoor filters every month during the heating season. A dirty filter can) Tj T*
+(increase power use by up to 15%.) Tj T*
+() Tj T*
+(Service) Tj T*
+(Have the heat pump serviced by an authorised installer every two years to keep the) Tj T*
+(warranty valid.) Tj T*
+() Tj T*
+(Error codes) Tj T*
+(A3: outdoor temperature sensor fault. A7: low refrigerant pressure; call the installer.) Tj T*
+(H1: defrosting \(not a fault\).) Tj T*
+() Tj T*
+(Warranty) Tj T*
+(5 years on the compressor, 3 years on other parts, from the installation date shown on) Tj T*
+(the installation certificate.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Ilma HP-12 User Guide) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000001448 00000 n 
+0000001574 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1659
+%%EOF

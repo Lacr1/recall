@@ -1,0 +1,10 @@
+heatpump:
+  host: 192.168.1.40
+schedule:
+  night: 18.5
+  workday: 19.0
+  home: 21.5
+  away: 16.0
+plants:
+  monstera: 7
+  basil: 2

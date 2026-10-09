@@ -1,0 +1,47 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 619 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Accessible Forms - a One-page Checklist) Tj T*
+() Tj T*
+(- Every field has a visible label; placeholder text is not a label.) Tj T*
+(- Errors say what went wrong and how to fix it, next to the field.) Tj T*
+(- Required fields are marked in text, not only with colour.) Tj T*
+(- The form works with the keyboard alone, in a logical order.) Tj T*
+(- Body text contrast at least 4.5:1, large text 3:1.) Tj T*
+(- Do not clear what the user typed when there is an error.) Tj T*
+(- Time limits can be extended, or are long enough for most people \(for example a payment) Tj T*
+(hold\).) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Accessible forms checklist) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000882 00000 n 
+0000001008 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1098
+%%EOF

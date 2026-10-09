@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import path from 'node:path'
 import { FakeOllama } from '../support/fake-ollama'
-import { CHOOSE_FOLDER, expectAccessible, launchRecall, tabTo, waitForIndexed, type RecallRun } from './recall'
+import { CHOOSE_FOLDER, expectAccessible, launchRecall, resultOptions, tabTo, waitForIndexed, type RecallRun } from './recall'
 
 // E2E flow 1 (first run without local AI → keyword search), driven only by keyboard (flow 7),
 // plus the renderer security checks from plan doc 07 §7.
@@ -63,7 +63,7 @@ test('keyword search works and says meaning search is off', async () => {
   await page.keyboard.type('invoice due date')
   await expect(page.locator('.results-meta')).toContainText('keywords only')
   await expect(page.getByRole('status').filter({ hasText: 'Meaning-based search is off' })).toBeVisible()
-  await expect(page.getByRole('option').first()).toContainText('invoice-2025-118.txt')
+  await expect(resultOptions(page).first()).toContainText('invoice-2025-118.txt')
   await expectAccessible(page, 'search: keyword-only results')
 
   // Keyboard: Enter opens the selected file, Ctrl+Enter shows it in its folder, Escape clears.

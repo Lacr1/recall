@@ -1,0 +1,14 @@
+port: 4010
+payment:
+  webhookToleranceSeconds: 300
+smtp:
+  host: smtp.staging.tidewaterlabs.se
+  port: 587
+  from: "Bookings (staging) <bookings@staging.tidewaterlabs.se>"
+sms:
+  provider: textbridge.example
+  sender: TIDEWATER
+features:
+  waitlist: true
+  groupBookings: true
+  pickupPoints: false

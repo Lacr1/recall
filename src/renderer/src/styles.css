@@ -981,17 +981,115 @@ span.status-item {
   border-radius: 0 8px 8px 0;
   font-size: 15px;
   line-height: 1.55;
+  cursor: pointer;
 }
 
 .passage-loc {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 11.5px;
   color: var(--text-2);
   margin-bottom: 4px;
 }
 
+.passage-loc .link {
+  font-size: 11.5px;
+  padding: 0;
+}
+
+/* ---------- filters ---------- */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.filter-selects {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-select {
+  font: 13px var(--font);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.filter-select.active {
+  border-color: var(--accent-2-text);
+  background: var(--accent-2-soft);
+  color: var(--accent-2-text);
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--accent-2-soft);
+  color: var(--accent-2-text);
+  border-radius: 999px;
+  padding: 2px 4px 2px 10px;
+}
+
+.filter-chip button {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 2px 6px;
+}
+
+.filter-chip button:hover {
+  background: color-mix(in srgb, var(--accent-2-text) 15%, transparent);
+}
+
 .copies {
   margin: 0;
   padding-left: 18px;
+}
+
+.versions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.versions li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.versions li.current .versions-name {
+  font-weight: 600;
+}
+
+.versions-name {
+  flex: 1;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- document panel ---------- */
@@ -1023,6 +1121,17 @@ span.status-item {
   font-size: 15px;
   line-height: 1.6;
   max-width: 900px;
+}
+
+/* Inline spans: an outline would box every wrapped line, so the current passage is told apart by tint. */
+.doc-passage {
+  background: color-mix(in srgb, var(--accent-2-soft) 55%, transparent);
+  border-radius: 3px;
+}
+
+.doc-passage.current {
+  background: color-mix(in srgb, var(--accent-2) 35%, var(--accent-2-soft));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-2) 35%, var(--accent-2-soft));
 }
 
 .match-nav {
@@ -1191,6 +1300,25 @@ span.status-item {
 .ai-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.model-picker,
+.model-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+
+.model-change .progress {
+  flex: 1;
+  min-width: 240px;
+}
+
+.model-note {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 /* ---------- ask ---------- */

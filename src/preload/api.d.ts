@@ -5,6 +5,7 @@ import type {
   FailureItem,
   FolderInfo,
   FolderSuggestion,
+  SearchFilters,
   SearchResponse,
   SuggestedFolderId
 } from '../shared/types'
@@ -15,10 +16,11 @@ export type ActionResult = { ok: true } | { ok: false; code: string; message: st
 /** The only surface the renderer has. Every call goes through validated IPC in main. */
 export interface RecallApi {
   getStatus(): Promise<AppStatus>
-  search(requestId: number, query: string): Promise<SearchResponse | null>
+  search(requestId: number, query: string, filters?: SearchFilters): Promise<SearchResponse | null>
   /** Example searches built from the user's own recent files; empty until some files have been read. */
   getSearchSuggestions(): Promise<string[]>
-  getDocument(fileId: number): Promise<DocumentView | null>
+  /** `passages` are evidence windows to locate in the returned text (DocumentView.passages). */
+  getDocument(fileId: number, passages?: { chunkId: number; start: number; end: number }[]): Promise<DocumentView | null>
   listFailures(): Promise<FailureItem[]>
   addFolder(): Promise<{ folder?: FolderInfo; error?: string; cancelled?: boolean }>
   getFolderSuggestions(): Promise<FolderSuggestion[]>
@@ -28,6 +30,13 @@ export interface RecallApi {
   retryFailed(): Promise<number>
   setPaused(paused: boolean): Promise<void>
   pullModel(): Promise<void>
+  /** Installed local models that could serve search (S4-07). */
+  listEmbedModels(): Promise<string[]>
+  /** Starts re-embedding with `model`; search keeps using the current model until it finishes. */
+  setEmbedModel(model: string): Promise<void>
+  cancelEmbedModelChange(): Promise<void>
+  /** Reads text in images and scanned PDFs on this computer (S4-06). */
+  setOcr(on: boolean): Promise<void>
   startOllama(): Promise<ActionResult>
   openOllamaDownload(): Promise<void>
   ask(askId: number, question: string): Promise<void>

@@ -1,0 +1,10 @@
+E-ticket receipt
+Booking reference: K4ZT9M
+Passengers: Maya Lindqvist, Ida Strand
+
+5 Apr 2026  Stockholm Arlanda (ARN) 17:25 -> Helsinki (HEL) 19:25
+5 Apr 2026  Helsinki (HEL) 23:55 -> Tokyo Narita (NRT) 19:10 +1
+17 Apr 2026 Osaka Kansai (KIX) 10:30 -> Helsinki (HEL) 15:40
+17 Apr 2026 Helsinki (HEL) 17:00 -> Stockholm Arlanda (ARN) 16:55
+
+Fare: SEK 17,840 for 2 passengers, economy, 1 checked bag each (23 kg).

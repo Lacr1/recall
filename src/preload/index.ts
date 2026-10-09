@@ -5,9 +5,9 @@ const call = (channel: string, params?: unknown) => ipcRenderer.invoke(`recall:$
 
 const api: RecallApi = {
   getStatus: () => call('getStatus'),
-  search: (requestId, query) => call('search', { requestId, query }),
+  search: (requestId, query, filters) => call('search', { requestId, query, filters }),
   getSearchSuggestions: () => call('getSearchSuggestions'),
-  getDocument: (fileId) => call('getDocument', { fileId }),
+  getDocument: (fileId, passages) => call('getDocument', { fileId, passages }),
   listFailures: () => call('listFailures'),
   addFolder: () => call('addFolder'),
   getFolderSuggestions: () => call('getFolderSuggestions'),
@@ -17,6 +17,10 @@ const api: RecallApi = {
   retryFailed: () => call('retryFailed'),
   setPaused: (paused) => call('setPaused', { paused }),
   pullModel: () => call('pullModel'),
+  listEmbedModels: () => call('listEmbedModels'),
+  setEmbedModel: (model) => call('setEmbedModel', { model }),
+  cancelEmbedModelChange: () => call('cancelEmbedModelChange'),
+  setOcr: (on) => call('setOcr', { on }),
   startOllama: () => call('startOllama'),
   openOllamaDownload: () => call('openOllamaDownload'),
   ask: (askId, question) => call('ask', { askId, question }),

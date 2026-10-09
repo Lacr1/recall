@@ -1,0 +1,10 @@
+Linkbay AX3000 Wi-Fi router - quick setup
+
+1. Connect the yellow WAN port to the fibre box with the supplied cable.
+2. Wait for the light to turn steady white (about 2 minutes).
+3. Join the network printed on the sticker under the router, then open http://192.168.50.1
+4. Change the admin password and the Wi-Fi name and password.
+5. Turn on automatic firmware updates.
+
+Factory reset: hold the reset button for 10 seconds with a paper clip until the light blinks amber.
+Guest network: Settings > Wireless > Guest, choose a separate password, limit to 2.4 GHz for smart plugs.

@@ -1,0 +1,101 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 2712 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Acme Booking System Redesign - Proposal) Tj T*
+(Prepared for Acme Outdoor Co. by Maya Lindqvist Consulting) Tj T*
+(Version: 2) Tj T*
+(Date: 3 February 2026) Tj T*
+() Tj T*
+(Summary) Tj T*
+(Acme Outdoor Co. runs guided hiking and kayaking trips in Jamtland and the Stockholm) Tj T*
+(archipelago. The current booking system was built in 2017, does not show live) Tj T*
+(availability and regularly double-books guides when two customers check out at the same) Tj T*
+(time. This proposal covers a redesign of the online booking system: availability search,) Tj T*
+(bookings for groups, checkout and confirmation emails.) Tj T*
+() Tj T*
+(About Maya Lindqvist Consulting) Tj T*
+(Maya Lindqvist Consulting is a one-person product and service design practice based in) Tj T*
+(Uppsala, Sweden. I help small and mid-sized organisations improve the booking, ordering) Tj T*
+(and customer communication flows that their business depends on. Every engagement is led) Tj T*
+(and delivered by me, with trusted specialists brought in for visual design or) Tj T*
+(development when needed.) Tj T*
+() Tj T*
+(How I work) Tj T*
+(Each project starts with a short discovery phase: interviews with staff and customers, a) Tj T*
+(review of existing data and a walkthrough of the current tools. From there I sketch) Tj T*
+(options, test them with real users and deliver working changes in small increments, so) Tj T*
+(you see progress every two weeks. You get a shared project board, a written summary) Tj T*
+(after every workshop and a fortnightly status note.) Tj T*
+() Tj T*
+(Scope) Tj T*
+(Discovery workshops with the operations team, a new availability calendar, a simplified) Tj T*
+(checkout, an admin view for trip leaders and a waitlist for sold-out trips.) Tj T*
+() Tj T*
+(Fees and payment) Tj T*
+(The total fee is EUR 26,000. We propose a 50% initial payment upon signing \(EUR 13,000\),) Tj T*
+(with the remaining 50% due on completion of the project.) Tj T*
+() Tj T*
+(Timeline) Tj T*
+(Work starts on 2 March and finishes on 29 May 2026.) Tj T*
+() Tj T*
+(Warranty) Tj T*
+(Defects reported within 60 days of launch are fixed at no extra cost.) Tj T*
+() Tj T*
+(Assumptions) Tj T*
+(- You nominate one decision maker who can approve designs within five working days.) Tj T*
+(- You provide access to analytics, the current system and the relevant staff.) Tj T*
+(- Travel within Sweden is included. Travel outside Sweden is billed at cost.) Tj T*
+(- Prices are in euro and exclude VAT.) Tj T*
+() Tj T*
+(Next steps) Tj T*
+(If this proposal looks right, reply to confirm and I will send a services agreement for) Tj T*
+(signature. This proposal is valid for 30 days from the date above.) Tj T*
+() Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 110 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Maya Lindqvist) Tj T*
+(maya@lindqvist-consulting.se | +46 70 214 88 31) Tj T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Title (Acme Booking Proposal v2) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000002982 00000 n 
+0000003108 00000 n 
+0000003269 00000 n 
+0000003395 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R /Info 8 0 R >>
+startxref
+3483
+%%EOF

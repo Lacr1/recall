@@ -1,0 +1,6 @@
+Booking confirmation - rail
+Booking ref: QX7PL2
+Traveller: Maya Lindqvist
+Outbound: Uppsala C 07:10 - Goteborg C 11:02, 3 March 2025, 2nd class, seat 34
+Return: Goteborg C 17:05 - Uppsala C 20:58, 3 March 2025, 2nd class, seat 61
+Total paid: SEK 1,186

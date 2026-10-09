@@ -1,0 +1,84 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 2378 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Services Agreement) Tj T*
+(Executed version - 10 March 2026) Tj T*
+() Tj T*
+(This agreement is made between Maya Lindqvist Consulting, org. no. 870412-4417, Uppsala) Tj T*
+(\("the Consultant"\) and Acme Outdoor Co. AB, org. no. 556901-2234, Ostersund \("the) Tj T*
+(Client"\).) Tj T*
+() Tj T*
+(1. Services) Tj T*
+(The Consultant will deliver the booking system redesign described in the proposal) Tj T*
+(version 3 dated 20 February 2026, which is attached as Appendix A. Changes to the scope) Tj T*
+(are agreed in writing by both parties before work on them starts.) Tj T*
+() Tj T*
+(2. Fees and payment) Tj T*
+(The total fee is EUR 26,000 excluding VAT, invoiced as 40% on signing, 30% when the) Tj T*
+(availability calendar goes live and 30% at final handover. Invoices are payable within) Tj T*
+(20 days of the invoice date. Late payments carry interest at 8 percentage points above) Tj T*
+(the Swedish reference rate.) Tj T*
+() Tj T*
+(3. Intellectual property) Tj T*
+(All designs, code and documents created specifically for the Client transfer to the) Tj T*
+(Client upon full payment. The Consultant keeps the right to reuse general know-how,) Tj T*
+(methods and components that are not specific to the Client.) Tj T*
+() Tj T*
+(4. Confidentiality) Tj T*
+(Each party keeps the other party's confidential information secret during the agreement) Tj T*
+(and for three years after it ends.) Tj T*
+() Tj T*
+(5. Liability) Tj T*
+(Each party's total liability under this agreement is capped at the total fee of EUR) Tj T*
+(26,000. Neither party is liable for indirect losses such as lost profit or lost) Tj T*
+(bookings.) Tj T*
+() Tj T*
+(6. Termination) Tj T*
+(Either party may terminate this agreement with 45 days written notice. Work completed up) Tj T*
+(to the termination date is invoiced pro rata.) Tj T*
+() Tj T*
+(7. Personal data) Tj T*
+(The Consultant processes customer booking data only as a processor on behalf of the) Tj T*
+(Client, under the data processing agreement attached as Appendix B.) Tj T*
+() Tj T*
+(8. Governing law) Tj T*
+(This agreement is governed by Swedish law. Disputes are settled by the Uppsala District) Tj T*
+(Court.) Tj T*
+() Tj T*
+(Signatures) Tj T*
+(Signed for Maya Lindqvist Consulting: Maya Lindqvist, 9 March 2026.) Tj T*
+(Signed for Acme Outdoor Co. AB: Jonas Berg, Head of Operations, 10 March 2026.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Acme Services Agreement signed) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000002642 00000 n 
+0000002768 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+2862
+%%EOF

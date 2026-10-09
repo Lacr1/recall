@@ -1,0 +1,9 @@
+MILESTONE ACCEPTANCE - Acme Outdoor Co.
+Project: Booking system redesign
+Milestone: 1 - availability calendar live
+Date: 17 April 2026
+
+The availability calendar went live on acme-outdoor.se on 16 April 2026 at 21:00. Customers can see open spots for every trip for the next 18 months, filter by region and difficulty, and join a waitlist for full trips.
+
+Accepted by: Jonas Berg, Head of Operations
+The Consultant may now invoice milestone 1 (30%, EUR 7,800).

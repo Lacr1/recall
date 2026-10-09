@@ -25,6 +25,33 @@ export function AiPanel({ status }: { status: AppStatus }) {
   const modelReady = ai.state === 'ready'
   const pct = ai.pull && ai.pull.total > 0 ? Math.round((ai.pull.completed / ai.pull.total) * 100) : undefined
 
+  // S4-07: switching the search model to another one installed in Ollama.
+  const [picking, setPicking] = useState(false)
+  const [models, setModels] = useState<string[]>()
+  const [choice, setChoice] = useState('')
+  const [switching, setSwitching] = useState(false)
+  const openPicker = async () => {
+    setPicking(true)
+    setModels(undefined)
+    const list = await window.recall.listEmbedModels().catch(() => [])
+    setModels(list)
+    setChoice(list.find((m) => m !== ai.embedModel) ?? list[0] ?? '')
+  }
+  const switchModel = async () => {
+    setSwitching(true)
+    setMessage(undefined)
+    try {
+      await window.recall.setEmbedModel(choice)
+      setPicking(false)
+    } catch (err) {
+      // Engine errors arrive as "CODE: message".
+      setMessage((err as Error).message.replace(/^.*?[A-Z_]+: /, ''))
+    } finally {
+      setSwitching(false)
+    }
+  }
+  const changePct = status.modelChange && status.modelChange.total > 0 ? Math.round((status.modelChange.done / status.modelChange.total) * 100) : 0
+
   return (
     <div className="ai-panel">
       <div className="ai-row">
@@ -67,8 +94,57 @@ export function AiPanel({ status }: { status: AppStatus }) {
               Download…
             </button>
           )}
+          {modelReady && !status.modelChange && !picking && (
+            <button className="btn" onClick={() => void openPicker()}>
+              Change model…
+            </button>
+          )}
         </div>
       </div>
+      {picking && !status.modelChange && (
+        <div className="model-picker">
+          {models === undefined ? (
+            <span className="small muted">Looking for installed models…</span>
+          ) : models.length === 0 ? (
+            <span className="small muted">No other models are installed in Ollama.</span>
+          ) : (
+            <>
+              <label className="small" htmlFor="embed-model">Search with</label>
+              <select id="embed-model" className="filter-select" value={choice} onChange={(e) => setChoice(e.target.value)}>
+                {models.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <button className="btn btn-primary" disabled={!choice || choice === ai.embedModel || switching} onClick={() => void switchModel()}>
+                {switching ? 'Checking…' : 'Switch'}
+              </button>
+            </>
+          )}
+          <button className="btn" onClick={() => setPicking(false)}>Cancel</button>
+          <p className="small muted model-note">
+            Recall re-reads the meaning of every file with the new model in the background. Search keeps using {ai.embedModel} until
+            that finishes.
+          </p>
+        </div>
+      )}
+      {status.modelChange && (
+        <div className="model-change">
+          <div
+            className="progress"
+            role="progressbar"
+            aria-label={`Switching to ${status.modelChange.model}`}
+            aria-valuemin={0}
+            aria-valuemax={status.modelChange.total}
+            aria-valuenow={status.modelChange.done}
+          >
+            <div className="progress-fill" style={{ width: `${changePct}%` }} />
+            <span className="progress-text">
+              Switching to {status.modelChange.model} · {status.modelChange.done.toLocaleString()} of {status.modelChange.total.toLocaleString()} passages
+            </span>
+          </div>
+          <button className="btn" onClick={() => void window.recall.cancelEmbedModelChange()}>Stop switching</button>
+        </div>
+      )}
       {ai.state === 'pulling' && ai.pull && (
         <div className="progress" role="progressbar" aria-label="Model download" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? 0}>
           <div className="progress-fill" style={{ width: `${pct ?? 0}%` }} />
