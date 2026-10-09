@@ -1,0 +1,67 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 532 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Acme Booking System Redesign - Proposal \(v2\)) Tj T*
+() Tj T*
+(Prepared for Acme Outdoor Co. by Maya Lindqvist Consulting. Version 2. This proposal) Tj T*
+(covers the redesign of the Acme online booking system for guided hiking trips, including) Tj T*
+(availability search, group bookings and confirmation emails.) Tj T*
+() Tj T*
+(Scope) Tj T*
+(Discovery workshops, a new availability calendar, a simplified checkout, an admin view) Tj T*
+(for trip leaders and a waitlist for sold-out trips.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 394 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Payment terms) Tj T*
+(We propose a 50% initial payment upon signing, with the remaining balance due on) Tj T*
+(completion of the project. The total fee is EUR 26,000.) Tj T*
+() Tj T*
+(Timeline) Tj T*
+(Work starts in March and finishes at the end of May.) Tj T*
+() Tj T*
+(Warranty) Tj T*
+(We fix defects reported within 60 days of launch at no extra cost.) Tj T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+8 0 obj
+<< /Title (Acme Booking Proposal v2) /Producer (Recall fixtures) >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000801 00000 n 
+0000000927 00000 n 
+0000001372 00000 n 
+0000001498 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R /Info 8 0 R >>
+startxref
+1581
+%%EOF

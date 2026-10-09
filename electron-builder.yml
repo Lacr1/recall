@@ -1,0 +1,24 @@
+appId: com.recall.desktop
+productName: Recall
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# Native binaries and pdf.js (loaded via dynamic import) must live outside the asar archive.
+asarUnpack:
+  - '**/*.node'
+  - node_modules/better-sqlite3/**
+  - node_modules/pdfjs-dist/**
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  artifactName: Recall-Setup-${version}.${ext}
+npmRebuild: false
