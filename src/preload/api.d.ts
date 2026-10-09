@@ -8,6 +8,7 @@ import type {
   SearchResponse,
   SuggestedFolderId
 } from '../shared/types'
+import type { MicProblemCode, VoiceSettings, VoiceStatus } from '../shared/voice'
 
 export type ActionResult = { ok: true } | { ok: false; code: string; message: string }
 
@@ -38,6 +39,13 @@ export interface RecallApi {
   getDataInfo(): Promise<{ path: string; bytes: number }>
   rebuildIndex(): Promise<void>
   restartEngine(): Promise<void>
+  getVoiceStatus(): Promise<VoiceStatus>
+  setVoiceSettings(patch: Partial<VoiceSettings>): Promise<VoiceStatus>
+  /** Mic level events for the meter in onboarding and Settings. */
+  setVoiceMeter(on: boolean): Promise<void>
+  /** Reports whether the microphone opened; called by the capture module. */
+  voiceCapture(result: { ok: true } | { code: MicProblemCode }): Promise<void>
+  openMicSettings(): Promise<void>
   onEvent(listener: (e: EngineEvent) => void): () => void
 }
 

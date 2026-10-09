@@ -1,4 +1,5 @@
 // DTOs shared by engine, main, preload and renderer. Plain data only.
+import type { VoiceStatus } from './voice'
 
 export type AiState = 'checking' | 'not_installed' | 'not_running' | 'model_missing' | 'pulling' | 'ready'
 
@@ -149,3 +150,8 @@ export type EngineEvent =
   | { event: 'ask'; data: AskEvent }
   | { event: 'engineRestarted' }
   | { event: 'engineStopped' }
+  | { event: 'voice'; data: VoiceStatus }
+  | { event: 'voiceWake' }
+  | { event: 'voiceLevel'; rms: number }
+  /** The popup's Open in Recall / Open Settings: show this view, with the spoken request filled in. */
+  | { event: 'voiceOpen'; view: 'search' | 'ask' | 'settings'; text: string }

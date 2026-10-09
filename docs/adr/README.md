@@ -24,3 +24,4 @@ Statuses:
 | [0012](0012-electron-builder-nsis.md) | electron-builder NSIS per-user installer | Accepted |
 | [0013](0013-loopback-network-policy.md) | Loopback-only network policy | Accepted (manual offline check pending) |
 | [0014](0014-index-recovery.md) | Recover by rebuilding the index from a saved folder list | Accepted |
+| [0015](0015-on-device-voice.md) | On-device voice with sherpa-onnx in its own `utilityProcess` | Accepted (real-voice accuracy pending S8-11) |

@@ -7,10 +7,16 @@ files:
   - out/**
   - package.json
 # Native binaries and pdf.js (loaded via dynamic import) must live outside the asar archive.
+# The voice addon loads onnxruntime and sherpa DLLs from its own folder, so the whole package is unpacked.
 asarUnpack:
   - '**/*.node'
   - node_modules/better-sqlite3/**
   - node_modules/pdfjs-dist/**
+  - node_modules/sherpa-onnx-win-x64/**
+# Voice models (plan 12 D-17); added in dev by `node scripts/fetch-voice-models.mjs`.
+extraResources:
+  - from: resources/voice
+    to: voice
 win:
   target:
     - target: nsis

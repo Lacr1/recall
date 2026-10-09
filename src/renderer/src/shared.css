@@ -1,0 +1,69 @@
+/* Pieces used by both the main window and the voice popup: the logo mark and file-type badges. */
+
+.logo {
+  flex-shrink: 0;
+}
+
+.logo-tile {
+  fill: var(--accent);
+}
+
+.logo-folder {
+  fill: var(--brand-ink);
+}
+
+.logo-lens {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.file-badge {
+  font: 600 10px var(--font);
+  letter-spacing: 0.03em;
+  border-radius: 4px;
+  padding: 2px 5px;
+  min-width: 34px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.tone-pdf {
+  background: #fde8e6;
+  color: #a1281d;
+}
+
+.tone-doc {
+  background: #e3ecfb;
+  color: #1f4f9e;
+}
+
+.tone-text {
+  background: #ececea;
+  color: #4b4f53;
+}
+
+.tone-code {
+  background: #e9e4f7;
+  color: #563c9c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tone-pdf {
+    background: #4a2421;
+    color: #f5b5ae;
+  }
+  .tone-doc {
+    background: #1f3150;
+    color: #a9c4f2;
+  }
+  .tone-text {
+    background: #33373a;
+    color: #c9cdd1;
+  }
+  .tone-code {
+    background: #33294d;
+    color: #c8b8f2;
+  }
+}

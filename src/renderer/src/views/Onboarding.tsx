@@ -2,17 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppStatus, FolderSuggestion, SuggestedFolderId } from '../../../shared/types'
 import { Icon, Logo, type IconName } from '../components'
 import { AiPanel } from './AiPanel'
+import { VoicePanel } from './VoicePanel'
 import { plural, shortDir } from '../format'
 
 const STEPS = [
   { label: 'Welcome', hint: 'What Recall does' },
   { label: 'Local AI', hint: 'Optional smart search' },
   { label: 'Folders', hint: 'What to remember' },
+  { label: 'Voice', hint: 'Optional, say “Recall”' },
   { label: 'Ready', hint: 'Start searching' }
 ]
 
 const PROMISES: { icon: IconName; title: string; text: string }[] = [
-  { icon: 'laptop', title: 'Runs on this computer', text: 'Searching happens on your PC. No account, nothing uploaded.' },
+  { icon: 'laptop', title: 'Runs on this computer', text: 'Searching and voice happen on your PC. No account, nothing uploaded.' },
   { icon: 'folder', title: 'Only folders you choose', text: 'Recall reads the folders you pick and nothing else. Remove one any time.' },
   { icon: 'shield', title: 'Never changes your files', text: 'Recall only reads. It never moves, edits or deletes anything.' },
   { icon: 'lock', title: 'Private and offline', text: 'Once set up, Recall needs no internet connection.' }
@@ -69,6 +71,7 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
   const [suggestions, setSuggestions] = useState<FolderSuggestion[]>([])
   // Suggestion id or folder id being added or removed; other folder buttons wait for it.
   const [pending, setPending] = useState<string>()
+  const [voiceOn, setVoiceOn] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const firstRender = useRef(true)
 
@@ -84,6 +87,10 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
   useEffect(() => {
     window.recall.getFolderSuggestions().then(setSuggestions, () => setSuggestions([]))
   }, [])
+
+  useEffect(() => {
+    if (step === 5) void window.recall.getVoiceStatus().then((v) => setVoiceOn(v.settings.enabled))
+  }, [step])
 
   const addFolder = async () => {
     setError(undefined)
@@ -144,7 +151,9 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
                 </li>
               ))}
             </ul>
-            <p className="hint">Setup takes about two minutes: turn on local AI (optional), then choose the folders to remember.</p>
+            <p className="hint">
+              Setup takes about two minutes: turn on local AI (optional), choose the folders to remember, then decide whether to use voice.
+            </p>
             <div className="onboarding-actions">
               <span className="spacer" />
               <button className="btn btn-primary btn-lg" autoFocus onClick={() => setStep(2)}>
@@ -278,6 +287,24 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
 
         {step === 4 && (
           <div className="onboarding-step" key="4">
+            <h1 ref={headingRef} tabIndex={-1}>Talk to Recall</h1>
+            <p className="lead">
+              Say “Recall” from any app, then say what you need. Answers from your files and copied file paths appear next to your
+              mouse pointer.
+            </p>
+            <VoicePanel status={status} mode="onboarding" />
+            <div className="onboarding-actions">
+              <button className="btn" onClick={() => setStep(3)}>Back</button>
+              <span className="spacer" />
+              <button className="btn btn-primary" onClick={() => setStep(5)}>
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="onboarding-step" key="5">
             <h1 ref={headingRef} tabIndex={-1}>You're all set</h1>
             <p className="lead">
               Recall is reading your files in the background. You can search right away; results get better as it finishes.
@@ -325,9 +352,19 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
                   ))}
                 </dl>
               </div>
+              <div>
+                <div className="section-label">Voice</div>
+                <p className="tips-voice">
+                  {voiceOn ? (
+                    <>Say “Recall, find my resume” or “Recall, when is the invoice due?” from any app.</>
+                  ) : (
+                    <>Voice is off. Turn it on in Settings → Voice.</>
+                  )}
+                </p>
+              </div>
             </div>
             <div className="onboarding-actions">
-              <button className="btn" onClick={() => setStep(3)}>Back</button>
+              <button className="btn" onClick={() => setStep(4)}>Back</button>
               <span className="spacer" />
               <button className="btn btn-primary btn-lg" onClick={onDone}>
                 Start searching

@@ -33,6 +33,8 @@ export function App() {
   const [engineNotice, setEngineNotice] = useState(false)
   const [engineStopped, setEngineStopped] = useState(false)
   const [rebuiltDismissed, setRebuiltDismissed] = useState(false)
+  // A request handed over from the voice popup ("Open in Recall"); the counter makes a repeat count as new.
+  const [voiceText, setVoiceText] = useState<{ text: string; n: number }>()
 
   const [splashDone, setSplashDone] = useState(onboarded)
 
@@ -51,6 +53,10 @@ export function App() {
         setEngineStopped(false)
         void window.recall.getStatus().then(setStatus)
       } else if (msg.event === 'engineStopped') setEngineStopped(true)
+      else if (msg.event === 'voiceOpen') {
+        setView(msg.view)
+        if (msg.text) setVoiceText((v) => ({ text: msg.text, n: (v?.n ?? 0) + 1 }))
+      }
     })
     const load = () => window.recall.getStatus().then(setStatus).catch(() => setTimeout(load, 500))
     load()
@@ -134,8 +140,8 @@ export function App() {
             <button className="link" onClick={() => setEngineNotice(false)}>Dismiss</button>
           </div>
         )}
-        {view === 'search' && <SearchView status={status} onNavigate={setView} />}
-        {view === 'ask' && <AskView status={status} listeners={askListeners} onNavigate={setView} />}
+        {view === 'search' && <SearchView status={status} onNavigate={setView} initialQuery={voiceText} />}
+        {view === 'ask' && <AskView status={status} listeners={askListeners} onNavigate={setView} initialQuestion={voiceText} />}
         {view === 'folders' && <FoldersView status={status} />}
         {view === 'settings' && <SettingsView status={status} />}
       </main>
