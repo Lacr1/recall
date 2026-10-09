@@ -35,7 +35,7 @@ export function DocumentPanel({ fileId, query, onClose }: { fileId: number; quer
           <>
             <div className="evidence-title">
               <FileBadge ext={doc.file.ext} />
-              <h2>{doc.title && doc.title !== doc.file.name ? `${doc.file.name} — ${doc.title}` : doc.file.name}</h2>
+              <h2>{doc.title && doc.title !== doc.file.name ? `${doc.file.name} · ${doc.title}` : doc.file.name}</h2>
             </div>
             <div className="mono small muted break">{doc.file.path}</div>
             <div className="small muted">

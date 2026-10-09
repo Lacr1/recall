@@ -7,6 +7,7 @@ import { assertIndexConsistent, getSetting } from './db'
 import { Indexer, UserError } from './indexer'
 import { embed, getVersion, hasModel, listModels, OllamaError, pullModel } from './ollama'
 import { SearchService } from './search'
+import { searchSuggestions } from './suggestions'
 import { toUnitVec, VectorIndex } from './vectors'
 import { runAsk } from './ask'
 import { readDocument } from './documents'
@@ -167,6 +168,16 @@ async function search(params: { requestId: number; query: string }): Promise<Sea
   }
 }
 
+// Rebuilt only when more files have been read or the folder list changed.
+let suggestionCache: { key: string; queries: string[] } | undefined
+
+function getSearchSuggestions(): string[] {
+  const p = indexer.progress()
+  const key = `${p.readDone}:${p.filesTotal}`
+  if (suggestionCache?.key !== key) suggestionCache = { key, queries: searchSuggestions(db).map((s) => s.query) }
+  return suggestionCache.queries
+}
+
 const asks = new Map<number, AbortController>()
 
 async function ask(params: { askId: number; question: string }): Promise<void> {
@@ -199,6 +210,7 @@ type Handler = (params: any) => unknown // eslint-disable-line @typescript-eslin
 const handlers: Record<string, Handler> = {
   getStatus,
   search,
+  getSearchSuggestions,
   ask: (p) => {
     void ask(p)
     return true

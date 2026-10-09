@@ -15,6 +15,8 @@ export type ActionResult = { ok: true } | { ok: false; code: string; message: st
 export interface RecallApi {
   getStatus(): Promise<AppStatus>
   search(requestId: number, query: string): Promise<SearchResponse | null>
+  /** Example searches built from the user's own recent files; empty until some files have been read. */
+  getSearchSuggestions(): Promise<string[]>
   getDocument(fileId: number): Promise<DocumentView | null>
   listFailures(): Promise<FailureItem[]>
   addFolder(): Promise<{ folder?: FolderInfo; error?: string; cancelled?: boolean }>

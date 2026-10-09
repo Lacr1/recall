@@ -10,7 +10,7 @@
 - Node.js 22.12+ (developed on 24.21)
 - [Ollama](https://ollama.com/download/windows) running, with models:
   - `ollama pull nomic-embed-text` (search by meaning, 274 MB, required for semantic search)
-  - `ollama pull qwen2.5:3b` (optional, for **Ask**; research licence, demo only — see plan decision D-04)
+  - `ollama pull qwen2.5:3b` (optional, for **Ask**; research licence, demo only; see plan decision D-04)
 
 Without Ollama, Recall still works in **keyword-only** mode and says so.
 

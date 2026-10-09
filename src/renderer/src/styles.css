@@ -479,6 +479,7 @@ span.status-item {
   padding: 0 14px;
   box-shadow: var(--shadow);
   color: var(--text-2);
+  view-transition-name: search-box;
 }
 
 .search-box:focus-within {
@@ -503,14 +504,142 @@ span.status-item {
   color: var(--text-2);
 }
 
-.empty-state {
+/* Empty screen: heading, search box, examples, then recent searches, centred. With a query the header returns
+   to the top. "safe" keeps the heading reachable by scrolling when a short window can't fit it all. */
+.search-view.home .search-header {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-items: center;
+  justify-content: safe center;
+  gap: 18px;
+  padding-bottom: 60px;
+}
+
+.search-view.home .search-box,
+.search-view.home .banner,
+.search-view.home .recent {
+  width: min(820px, 100%);
+}
+
+.search-view.home .search-box {
+  padding: 0 20px;
+  border-radius: 16px;
+}
+
+.search-view.home .search-box svg {
+  width: 26px;
+  height: 26px;
+}
+
+.search-view.home .search-box input {
+  font-size: 22px;
+  padding: 20px 0;
+}
+
+.home-intro {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  padding-bottom: 80px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.home-intro h2 {
+  font-size: 44px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.home-intro p {
+  margin: 0;
+  font-size: 20px;
+}
+
+.search-view.home .examples {
+  max-width: 820px;
+  gap: 10px;
+}
+
+.search-view.home .chip {
+  font-size: 17px;
+  padding: 9px 18px;
+}
+
+.recent {
+  margin-top: 12px;
+}
+
+.recent-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.recent .section-label {
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+
+.recent ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recent li {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius);
+}
+
+.recent li:hover {
+  background: var(--surface-2);
+}
+
+.recent-query {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: none;
+  padding: 10px 12px;
+  font-size: 17px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-query svg {
+  flex: none;
+  color: var(--text-2);
+}
+
+.recent-remove {
+  border: none;
+  background: none;
+  color: var(--text-2);
+  font-size: 22px;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.recent li:hover .recent-remove,
+.recent-remove:focus-visible {
+  opacity: 1;
+}
+
+.recent-remove:hover {
+  color: var(--text);
 }
 
 .examples {
@@ -544,6 +673,106 @@ span.status-item {
   font-size: 12.5px;
   color: var(--text-2);
   padding: 4px 4px 8px;
+  min-height: 30px;
+}
+
+/* ---------- loading skeletons ---------- */
+
+.sk {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-2) 30%, var(--border) 50%, var(--surface-2) 70%) 0 0 / 300% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.skeleton-card {
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-card:hover {
+  border-color: var(--border);
+}
+
+.sk-meta {
+  width: 180px;
+  margin-top: 3px;
+}
+
+.sk-badge {
+  width: 34px;
+  height: 20px;
+  border-radius: 4px;
+  flex: none;
+}
+
+.sk-name {
+  height: 16px;
+}
+
+.sk-sub {
+  width: 34%;
+  height: 10px;
+}
+
+.sk-line {
+  width: 100%;
+}
+
+.sk-short {
+  width: 64%;
+}
+
+.sk-pill {
+  width: 96px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.sk-heading {
+  width: 55%;
+  height: 18px;
+}
+
+.sk-wide {
+  width: 80%;
+}
+
+.sk-button {
+  width: 84px;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.sk-label {
+  width: 110px;
+  height: 10px;
+  margin: 22px 0 10px;
+}
+
+.evidence .sk-line + .sk-line {
+  margin-top: 8px;
+}
+
+.sk-passage {
+  height: 110px;
+  border-radius: var(--radius);
+}
+
+.evidence-head .sk-sub {
+  margin-top: 4px;
 }
 
 .result-list {
@@ -1493,6 +1722,16 @@ button.step-body:hover .step-label {
     animation: none !important;
     transition: none !important;
   }
+}
+
+::view-transition-group(search-box) {
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
 }
 
 @media (forced-colors: active) {

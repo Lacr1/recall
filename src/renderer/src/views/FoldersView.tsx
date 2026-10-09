@@ -36,7 +36,7 @@ export function FoldersView({ status }: { status: AppStatus }) {
       {error && <p className="error" role="alert">{error}</p>}
 
       <section className="card">
-        <h2 className="card-title">Index status — {idx.text}</h2>
+        <h2 className="card-title">Index status: {idx.text}</h2>
         <div className="bar-row">
           <span>Reading files</span>
           <div className="progress small-bar" role="progressbar" aria-label="Reading files" aria-valuenow={readPct} aria-valuemin={0} aria-valuemax={100}>
@@ -50,7 +50,7 @@ export function FoldersView({ status }: { status: AppStatus }) {
             <div className="progress-fill" style={{ width: `${embedPct}%` }} />
           </div>
           <span className="muted">
-            {status.ai.state === 'ready' ? `${p.embedDone.toLocaleString()} / ${p.embedTotal.toLocaleString()}` : 'Paused — local AI unavailable'}
+            {status.ai.state === 'ready' ? `${p.embedDone.toLocaleString()} / ${p.embedTotal.toLocaleString()}` : 'Paused while local AI is unavailable'}
           </span>
         </div>
       </section>
@@ -61,7 +61,7 @@ export function FoldersView({ status }: { status: AppStatus }) {
           <div className="folder-path mono">{f.path}</div>
           <div className="small muted">
             {plural(f.fileCount, 'file')}
-            {f.status === 'unavailable' && ' · Unavailable — folder not found (index kept)'}
+            {f.status === 'unavailable' && ' · Unavailable: folder not found (index kept)'}
             {f.skippedCount > 0 && ` · ${f.skippedCount} skipped`}
             {f.failedCount > 0 && ` · ${f.failedCount} could not be read`}
           </div>

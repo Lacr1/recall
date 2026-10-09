@@ -123,7 +123,7 @@ export function AskView({ status, listeners, onNavigate }: { status: AppStatus; 
             )
           })()}
           {state === 'done' && answer && (
-            <p className="disclaimer">Generated locally by {status.ai.chatModel}. It can be wrong — check the sources.</p>
+            <p className="disclaimer">Generated locally by {status.ai.chatModel}. It can be wrong, so check the sources.</p>
           )}
         </section>
       )}

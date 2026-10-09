@@ -147,6 +147,7 @@ function registerIpc(): void {
   const validators: Record<(typeof RENDERER_METHODS)[number], (p: Record<string, unknown>) => unknown> = {
     getStatus: () => ({}),
     search: (p) => ({ requestId: int(p.requestId), query: String(p.query ?? '').slice(0, 500) }),
+    getSearchSuggestions: () => ({}),
     getDocument: (p) => ({ fileId: int(p.fileId) }),
     listFailures: () => ({}),
     removeFolder: (p) => ({ folderId: int(p.folderId) }),
