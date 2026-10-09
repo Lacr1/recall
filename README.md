@@ -76,3 +76,15 @@ Renderer (React, sandboxed, no Node)  ──typed IPC──▶  Main (window, di
 ```
 
 The search pipeline combines keyword (BM25) results, all-terms keyword results, meaning (cosine) results and file-name matches with Reciprocal Rank Fusion. Results are grouped per file, identical copies are collapsed, and each result carries a deterministic match reason. Details are in [docs/app-plan/04-search-and-retrieval.md](docs/app-plan/04-search-and-retrieval.md).
+
+## License
+
+Recall's code is released under the [MIT License](LICENSE).
+
+The voice models shipped with the installer have their own licences, listed in [resources/voice/NOTICE.md](resources/voice/NOTICE.md). The AI models Recall uses through Ollama are downloaded separately and keep their own licences: `nomic-embed-text` is Apache-2.0, and `qwen2.5:3b` is under the Qwen research licence, which does not allow commercial use.
+
+## Credits
+
+- The Ollama, Nomic and Qwen logos in Settings belong to their owners and are shown only to name the software Recall works with. Their use does not imply endorsement.
+- Local AI runs through [Ollama](https://ollama.com). Embeddings come from [Nomic](https://www.nomic.ai) `nomic-embed-text`, and Ask uses [Qwen](https://github.com/QwenLM/Qwen2.5) `qwen2.5:3b`.
+- On-device voice uses [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), with the models credited in [resources/voice/NOTICE.md](resources/voice/NOTICE.md).
