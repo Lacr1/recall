@@ -23,7 +23,9 @@ export interface RecallApi {
   copyPath(fileId: number): Promise<ActionResult>
   deleteAllData(): Promise<void>
   getDataInfo(): Promise<{ path: string; bytes: number }>
-  onEvent(listener: (e: EngineEvent | { event: 'engineRestarted' }) => void): () => void
+  rebuildIndex(): Promise<void>
+  restartEngine(): Promise<void>
+  onEvent(listener: (e: EngineEvent) => void): () => void
 }
 
 declare global {

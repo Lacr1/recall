@@ -108,6 +108,7 @@ export function SearchView({ status, onNavigate }: { status: AppStatus; onNaviga
 
   return (
     <div className="search-view">
+      <h1 className="sr-only">Search your files</h1>
       <div className="search-header">
         <div className="search-box">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor">

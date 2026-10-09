@@ -1,10 +1,11 @@
 import Database from 'better-sqlite3'
+import { copyFileSync, rmSync } from 'node:fs'
 
 export type DB = Database.Database
 
 // Content-addressed schema (plan doc 05): files -> contents (by SHA-256) -> chunks -> vectors.
 // Status columns on files/contents act as the work queue.
-const MIGRATIONS: string[] = [
+export const MIGRATIONS: string[] = [
   `
   CREATE TABLE folders (
     id INTEGER PRIMARY KEY,
@@ -108,28 +109,58 @@ const MIGRATIONS: string[] = [
   `
 ]
 
-export function openDatabase(path: string): DB {
+/** `migrations` is a parameter only so tests can add a failing one. */
+export function openDatabase(path: string, migrations: string[] = MIGRATIONS): DB {
   const db = new Database(path)
-  db.pragma('journal_mode = WAL')
-  db.pragma('synchronous = NORMAL')
-  db.pragma('foreign_keys = ON')
-  db.pragma('busy_timeout = 5000')
-  db.pragma('temp_store = MEMORY')
-  migrate(db)
+  try {
+    db.pragma('journal_mode = WAL')
+    db.pragma('synchronous = NORMAL')
+    db.pragma('foreign_keys = ON')
+    db.pragma('busy_timeout = 5000')
+    db.pragma('temp_store = MEMORY')
+    migrate(db, path, migrations)
+  } catch (err) {
+    if (db.open) db.close()
+    throw err
+  }
   return db
 }
 
-function migrate(db: DB): void {
+/**
+ * Plan doc 05 §10: an existing index is backed up with VACUUM INTO before migrating, and checked afterwards.
+ * If any step fails, the backup is put back unchanged and DB_MIGRATION_FAILED is thrown.
+ */
+function migrate(db: DB, file: string, migrations: string[]): void {
   const current = db.pragma('user_version', { simple: true }) as number
-  if (current > MIGRATIONS.length) {
+  if (current > migrations.length) {
     throw Object.assign(new Error('Database was created by a newer version of Recall'), { code: 'DB_NEWER_VERSION' })
   }
-  for (let v = current; v < MIGRATIONS.length; v++) {
-    db.transaction(() => {
-      db.exec(MIGRATIONS[v])
-      db.pragma(`user_version = ${v + 1}`)
-    })()
+  if (current === migrations.length) return
+  const backup = current > 0 ? `${file}.pre-v${migrations.length}.bak` : undefined
+  if (backup) {
+    rmSync(backup, { force: true })
+    db.prepare('VACUUM INTO ?').run(backup)
   }
+  try {
+    for (let v = current; v < migrations.length; v++) {
+      db.transaction(() => {
+        db.exec(migrations[v])
+        db.pragma(`user_version = ${v + 1}`)
+      })()
+    }
+    if (backup) {
+      if (db.pragma('quick_check', { simple: true }) !== 'ok') throw new Error('quick_check failed after migration')
+      if ((db.pragma('foreign_key_check') as unknown[]).length) throw new Error('foreign key check failed after migration')
+    }
+  } catch (err) {
+    if (!backup) throw err
+    db.close()
+    for (const suffix of ['-wal', '-shm']) rmSync(file + suffix, { force: true })
+    copyFileSync(backup, file)
+    rmSync(backup, { force: true })
+    throw Object.assign(new Error(`Could not update the index format: ${(err as Error).message}`), { code: 'DB_MIGRATION_FAILED' })
+  }
+  if (backup) rmSync(backup, { force: true })
 }
 
 export function getSetting(db: DB, key: string): string | undefined {
@@ -153,11 +184,18 @@ export function assertIndexConsistent(db: DB): void {
     problems.push('FTS row count differs from chunk count')
   if (q("SELECT count(*) n FROM files WHERE status = 'linked' AND content_id IS NULL"))
     problems.push('linked file without content')
-  const integrity = db.prepare("INSERT INTO chunks_fts(chunks_fts, rank) VALUES ('integrity-check', 1)")
-  try {
-    integrity.run()
-  } catch {
-    problems.push('chunks_fts integrity-check failed')
+  if (q("SELECT count(*) n FROM contents c WHERE extract_status = 'ok' AND chunk_count <> (SELECT count(*) FROM chunks WHERE content_id = c.id)"))
+    problems.push('chunk count differs from chunks')
+  if (q("SELECT count(*) n FROM chunks ch JOIN contents c ON c.id = ch.content_id LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id WHERE c.embed_status = 'done' AND v.chunk_id IS NULL"))
+    problems.push('content marked embedded has chunks without vectors')
+  if (db.pragma('quick_check', { simple: true }) !== 'ok') problems.push('SQLite quick_check failed')
+  if ((db.pragma('foreign_key_check') as unknown[]).length) problems.push('foreign key violation')
+  for (const table of ['chunks_fts', 'files_fts']) {
+    try {
+      db.prepare(`INSERT INTO ${table}(${table}, rank) VALUES ('integrity-check', 1)`).run()
+    } catch {
+      problems.push(`${table} integrity-check failed`)
+    }
   }
   if (problems.length) throw new Error('Index inconsistent: ' + problems.join('; '))
 }

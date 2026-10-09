@@ -13,15 +13,10 @@ export function SettingsView({ status }: { status: AppStatus }) {
     void window.recall.getDataInfo().then(setInfo)
   }, [status.progress.chunks, status.folders.length])
 
+  // Main clears stored settings and reloads the window, which returns to onboarding.
   const deleteAll = async () => {
     setConfirm(false)
     await window.recall.deleteAllData()
-    try {
-      localStorage.clear()
-    } catch {
-      // Nothing stored.
-    }
-    location.reload()
   }
 
   return (
