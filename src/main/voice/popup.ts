@@ -1,10 +1,11 @@
 import { BrowserWindow, globalShortcut, screen, type WebFrameMain } from 'electron'
 import path from 'node:path'
-import { POPUP_WIDTH, type PopupAction, type PopupState } from '../../shared/popup'
+import { POPUP_MASCOT_WIDTH, POPUP_WIDTH, type PopupAction, type PopupState } from '../../shared/popup'
 import { placePopup, type Rect } from './placement'
 
-// The card is drawn inside a transparent window with this margin on every side, so its CSS shadow shows.
+// The panda and card are drawn inside a transparent window with this margin on every side, so the shadow shows.
 const MARGIN = 12
+const STAGE_WIDTH = POPUP_MASCOT_WIDTH + POPUP_WIDTH
 
 /**
  * The voice popup near the pointer (plan 12 §5.1). Created once while voice is on and only shown and hidden
@@ -27,7 +28,7 @@ export class VoicePopup {
   prepare(): void {
     if (this.win && !this.win.isDestroyed()) return
     const win = new BrowserWindow({
-      width: POPUP_WIDTH + MARGIN * 2,
+      width: STAGE_WIDTH + MARGIN * 2,
       height: this.cardHeight + MARGIN * 2,
       show: false,
       frame: false,
@@ -116,8 +117,8 @@ export class VoicePopup {
 
   private place(): void {
     if (!this.win || !this.anchor) return
-    const size = { width: POPUP_WIDTH + MARGIN * 2, height: this.cardHeight + MARGIN * 2 }
-    // The card, not the transparent margin, keeps its distance from the pointer.
+    const size = { width: STAGE_WIDTH + MARGIN * 2, height: this.cardHeight + MARGIN * 2 }
+    // The panda and card, not the transparent margin, keep their distance from the pointer.
     const pos = placePopup(this.anchor.pointer, { width: size.width - MARGIN * 2, height: size.height - MARGIN * 2 }, this.anchor.workArea)
     this.win.setBounds({ x: pos.x - MARGIN, y: pos.y - MARGIN, ...size })
   }

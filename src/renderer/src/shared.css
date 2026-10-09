@@ -5,21 +5,6 @@
   user-select: none;
 }
 
-.logo-tile {
-  fill: var(--accent);
-}
-
-.logo-folder {
-  fill: var(--brand-ink);
-}
-
-.logo-lens {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
 .file-badge {
   font: 600 10px var(--font);
   letter-spacing: 0.03em;

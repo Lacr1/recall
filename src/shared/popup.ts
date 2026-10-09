@@ -59,6 +59,8 @@ export type PopupAction =
   | { type: 'resize'; height: number }
 
 export const POPUP_WIDTH = 400
+/** The summoned panda beside the card, plus its gap; matches .mascot in popup.css. */
+export const POPUP_MASCOT_WIDTH = 60
 export const POPUP_MAX_HEIGHT = 480
 
 /** Validates an action coming from the popup renderer; anything malformed is dropped. */

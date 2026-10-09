@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { PopupItem, PopupSource, PopupState, PopupView, RecallPopupApi } from '../../../shared/popup'
-import { FileBadge } from '../components'
+import { FileBadge, Logo } from '../components'
 import * as copy from '../../../shared/popup-copy'
 import { speak, stopSpeaking } from './speech'
 
@@ -15,18 +15,18 @@ const act = (a: Parameters<RecallPopupApi['action']>[0]) => void api().action(a)
 
 export function Popup() {
   const [state, setState] = useState<PopupState>()
-  const cardRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => api().onState(setState), [])
 
-  // Main sizes the window to the card, so the transparent window never blocks clicks around it.
+  // Main sizes the window to the panda and card, so the transparent window never blocks clicks around them.
   useLayoutEffect(() => {
-    const card = cardRef.current
-    if (!card) return
-    const ro = new ResizeObserver(() => act({ type: 'resize', height: card.offsetHeight }))
-    ro.observe(card)
+    const stage = stageRef.current
+    if (!stage) return
+    const ro = new ResizeObserver(() => act({ type: 'resize', height: stage.offsetHeight }))
+    ro.observe(stage)
     return () => ro.disconnect()
-    // The card is re-created on every show (it is keyed by showCount), so observe the new one.
+    // The stage is re-created on every show (it is keyed by showCount), so observe the new one.
   }, [state?.showCount])
 
   useSpokenReply(state)
@@ -43,19 +43,23 @@ export function Popup() {
   if (!state) return null
   const { view } = state
 
+  // Re-created on every show, so the panda is summoned first and the card pops out after it each time.
   return (
-    <div
-      className="card"
-      ref={cardRef}
-      role="dialog"
-      aria-label="Recall"
-      key={state.showCount}
-      onMouseEnter={() => act({ type: 'hover', on: true })}
-      onMouseLeave={() => act({ type: 'hover', on: false })}
-    >
-      <Header state={state} />
-      <div className="body" key={view.kind} aria-live="polite">
-        <Body view={view} showCount={state.showCount} />
+    <div className="stage" ref={stageRef} key={state.showCount}>
+      <Summon />
+      <div className="bubble">
+        <div
+          className="card"
+          role="dialog"
+          aria-label="Recall"
+          onMouseEnter={() => act({ type: 'hover', on: true })}
+          onMouseLeave={() => act({ type: 'hover', on: false })}
+        >
+          <Header state={state} />
+          <div className="body" key={view.kind} aria-live="polite">
+            <Body view={view} showCount={state.showCount} />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -71,7 +75,6 @@ function Header({ state }: { state: PopupState }) {
   const canSpeak = speech.enabled && (view.kind === 'answer' || view.kind === 'files')
   return (
     <header className="head">
-      <Mark />
       <span className="brand">Recall</span>
       <span className={`pill pill-${tone}`}>
         {tone === 'done' ? <span aria-hidden="true">✓</span> : tone !== 'choose' && <span className="pill-dot" aria-hidden="true" />}
@@ -329,14 +332,50 @@ function Meter() {
   )
 }
 
-function Mark() {
+/** Smoke puffs: where each drifts to from the panda's centre, and its size, in px. */
+const PUFFS = [
+  [-24, -6, 30],
+  [-12, -22, 26],
+  [8, -24, 30],
+  [24, -8, 26],
+  [22, 14, 24],
+  [-22, 14, 24],
+  [0, 20, 26],
+  [0, -4, 32]
+]
+
+/** Where each star flies to, in px from the panda's centre. */
+const SPARKS = [
+  [-30, -16],
+  [-12, -32],
+  [16, -30],
+  [32, -10],
+  [28, 20],
+  [-28, 22]
+]
+
+/**
+ * The panda is summoned before the card appears: a ring opens at its feet, a smoke cloud bursts and clears to
+ * show it landing with a squash, stars fly out, then it floats gently while the popup is open.
+ */
+function Summon() {
   return (
-    <svg className="logo" viewBox="0 0 64 64" width="20" height="20" aria-hidden="true">
-      <rect className="logo-tile" width="64" height="64" rx="16" />
-      <path className="logo-folder" d="M14 22a4 4 0 0 1 4-4h9l4 4h15a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4Z" />
-      <circle className="logo-lens" cx="30" cy="31" r="6" />
-      <path className="logo-lens" d="M34.5 35.5 39 40" />
-    </svg>
+    <span className="mascot" aria-hidden="true">
+      <span className="summon-ring" />
+      <span className="panda-shadow" />
+      <Logo size={48} className="summon-panda" />
+      <span className="summon-flash" />
+      {PUFFS.map(([x, y, size], i) => (
+        <span
+          key={i}
+          className="puff"
+          style={{ '--x': `${x}px`, '--y': `${y}px`, '--size': `${size}px`, animationDelay: `${60 + i * 15}ms` } as CSSProperties}
+        />
+      ))}
+      {SPARKS.map(([x, y], i) => (
+        <span key={i} className={`spark spark-${i % 3}`} style={{ '--x': `${x}px`, '--y': `${y}px` } as CSSProperties} />
+      ))}
+    </span>
   )
 }
 
