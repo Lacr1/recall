@@ -1,0 +1,63 @@
+/* Colour, type and shape tokens shared by the main window and the voice popup. */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f0f0ed;
+  --border: #e2e2dd;
+  --text: #1d1f21;
+  --text-2: #5d6166;
+  --accent: #1f3a68;
+  --accent-hover: #2a4c85;
+  --on-accent: #ffffff;
+  --accent-2: #99c2ff;
+  --accent-2-soft: #e3eeff;
+  --accent-2-text: #1f3a68;
+  --brand-ink: #99c2ff;
+  --progress-fill: #99c2ff;
+  --mark-bg: #fde7a6;
+  --mark-text: #2b2100;
+  --mark-current: #f6b93b;
+  --warn-bg: #fff4e0;
+  --warn-text: #7a4a00;
+  --info-bg: #e3eeff;
+  --info-text: #1d4f86;
+  --danger: #b42318;
+  --ok: #2e7d32;
+  /* Green text strong enough for 4.5:1 on tinted backgrounds. */
+  --ok-text: #1b5e20;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.05);
+  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151617;
+    --surface: #1d1f20;
+    --surface-2: #26292b;
+    --border: #33373a;
+    --text: #e8e9ea;
+    --text-2: #a3a8ad;
+    --accent: #99c2ff;
+    --accent-hover: #b5d3ff;
+    --on-accent: #10213d;
+    --accent-2-soft: #1e2b3f;
+    --accent-2-text: #99c2ff;
+    --brand-ink: #1f3a68;
+    --progress-fill: #2a4c85;
+    --mark-bg: #5c4a12;
+    --mark-text: #fff4cf;
+    --mark-current: #a07b10;
+    --warn-bg: #3a2c12;
+    --warn-text: #f5d08a;
+    --info-bg: #1e2b3f;
+    --info-text: #a9cbf2;
+    --danger: #f2877d;
+    --ok: #7bc47f;
+    --ok-text: #8fd393;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}

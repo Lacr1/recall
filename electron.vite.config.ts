@@ -6,16 +6,35 @@ export default defineConfig({
   main: {
     build: {
       rollupOptions: {
-        // The engine runs in its own utilityProcess, so it is a separate entry.
+        // The engine and voice run in their own utilityProcesses, so they are separate entries.
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          engine: resolve(__dirname, 'src/engine/index.ts')
+          engine: resolve(__dirname, 'src/engine/index.ts'),
+          voice: resolve(__dirname, 'src/voice/index.ts')
         }
       }
     }
   },
-  preload: {},
+  // The voice popup is a second window with its own preload and page (plan 12 §5.1).
+  preload: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/preload/index.ts'),
+          popup: resolve(__dirname, 'src/preload/popup.ts')
+        }
+      }
+    }
+  },
   renderer: {
-    plugins: [react()]
+    plugins: [react()],
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/renderer/index.html'),
+          popup: resolve(__dirname, 'src/renderer/popup.html')
+        }
+      }
+    }
   }
 })

@@ -1,0 +1,7 @@
+{
+  "name": "recall-voice-packaged-spike",
+  "version": "0.0.1",
+  "private": true,
+  "main": "main.js",
+  "dependencies": { "sherpa-onnx-node": "1.13.8" }
+}

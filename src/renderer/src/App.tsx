@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { AppStatus, AskEvent } from '../../shared/types'
 import { Icon, Logo } from './components'
 import { Onboarding } from './views/Onboarding'
@@ -8,6 +8,7 @@ import { AskView } from './views/AskView'
 import { FoldersView } from './views/FoldersView'
 import { SettingsView } from './views/SettingsView'
 import { StatusBar } from './views/StatusBar'
+import { TitleBar } from './views/TitleBar'
 import { EngineStoppedScreen, IndexProblemScreen } from './views/RecoveryScreen'
 
 export type View = 'search' | 'ask' | 'folders' | 'settings'
@@ -33,6 +34,8 @@ export function App() {
   const [engineNotice, setEngineNotice] = useState(false)
   const [engineStopped, setEngineStopped] = useState(false)
   const [rebuiltDismissed, setRebuiltDismissed] = useState(false)
+  // A request handed over from the voice popup ("Open in Recall"); the counter makes a repeat count as new.
+  const [voiceText, setVoiceText] = useState<{ text: string; n: number }>()
 
   const [splashDone, setSplashDone] = useState(onboarded)
 
@@ -51,6 +54,10 @@ export function App() {
         setEngineStopped(false)
         void window.recall.getStatus().then(setStatus)
       } else if (msg.event === 'engineStopped') setEngineStopped(true)
+      else if (msg.event === 'voiceOpen') {
+        setView(msg.view)
+        if (msg.text) setVoiceText((v) => ({ text: msg.text, n: (v?.n ?? 0) + 1 }))
+      }
     })
     const load = () => window.recall.getStatus().then(setStatus).catch(() => setTimeout(load, 500))
     load()
@@ -68,9 +75,25 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  if (!status) return engineStopped ? <EngineStoppedScreen /> : <Splash />
-  if (status.problem) return <IndexProblemScreen problem={status.problem} />
-  if (!splashDone) return <Splash />
+  // Which window this is, once known: onboarding is just the setup card; everything else is the app window.
+  let mode: 'onboarding' | 'app' | undefined
+  if (status?.problem || (!status && engineStopped)) mode = 'app'
+  else if (showOnboarding !== undefined) mode = showOnboarding ? 'onboarding' : 'app'
+  useEffect(() => {
+    if (mode) void window.recall.setWindowMode(mode)
+  }, [mode])
+  // Until then (the splash), the first run is assumed to be onboarding, as main assumes when it opens the window.
+  const compact = mode ? mode === 'onboarding' : !onboarded
+  const shell = (body: ReactNode) => (
+    <div className={`window ${compact ? 'window-compact' : ''}`}>
+      <TitleBar compact={compact} />
+      <div className="window-body">{body}</div>
+    </div>
+  )
+
+  if (!status) return shell(engineStopped ? <EngineStoppedScreen /> : <Splash />)
+  if (status.problem) return shell(<IndexProblemScreen problem={status.problem} />)
+  if (!splashDone) return shell(<Splash />)
 
   const finishOnboarding = () => {
     try {
@@ -86,10 +109,10 @@ export function App() {
   // Decided once on first status so adding a folder mid-onboarding doesn't skip the last step.
   if (showOnboarding === undefined) {
     setShowOnboarding(!onboarded && status.folders.length === 0)
-    return null
+    return shell(null)
   }
   if (showOnboarding) {
-    return <Onboarding status={status} onDone={finishOnboarding} />
+    return shell(<Onboarding status={status} onDone={finishOnboarding} />)
   }
 
   const nav: { id: View; label: string; icon: 'search' | 'ask' | 'folder' | 'settings' }[] = [
@@ -99,7 +122,7 @@ export function App() {
     { id: 'settings', label: 'Settings', icon: 'settings' }
   ]
 
-  return (
+  return shell(
     <div className="app">
       <nav className="rail" aria-label="Main">
         <Logo size={36} className="brand" />
@@ -134,8 +157,8 @@ export function App() {
             <button className="link" onClick={() => setEngineNotice(false)}>Dismiss</button>
           </div>
         )}
-        {view === 'search' && <SearchView status={status} onNavigate={setView} />}
-        {view === 'ask' && <AskView status={status} listeners={askListeners} onNavigate={setView} />}
+        {view === 'search' && <SearchView status={status} onNavigate={setView} initialQuery={voiceText} />}
+        {view === 'ask' && <AskView status={status} listeners={askListeners} onNavigate={setView} initialQuestion={voiceText} />}
         {view === 'folders' && <FoldersView status={status} />}
         {view === 'settings' && <SettingsView status={status} />}
       </main>

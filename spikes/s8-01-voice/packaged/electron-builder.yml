@@ -1,0 +1,26 @@
+appId: com.recall.voicespike
+productName: VoiceSpike
+directories:
+  output: dist
+files:
+  - main.js
+  - child.js
+  - package.json
+  - node_modules/**
+# The addon loads onnxruntime and sherpa DLLs from its own folder, so the whole package must be outside the asar.
+asarUnpack:
+  - node_modules/sherpa-onnx-win-x64/**
+extraResources:
+  - from: ../models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01
+    to: voice/kws
+    filter: ['*.int8.onnx', 'tokens.txt']
+  - from: ../models/sherpa-onnx-moonshine-tiny-en-int8
+    to: voice/asr
+    filter: ['*.onnx', 'tokens.txt', 'LICENSE']
+  - from: ../models/silero_vad.onnx
+    to: voice/silero_vad.onnx
+  - from: ../audio/wake/01-David-r0.wav
+    to: voice/test.wav
+win:
+  target: dir
+npmRebuild: false

@@ -28,6 +28,13 @@ const api: RecallApi = {
   getDataInfo: () => call('getDataInfo'),
   rebuildIndex: () => call('rebuildIndex'),
   restartEngine: () => call('restartEngine'),
+  getVoiceStatus: () => call('getVoiceStatus'),
+  setVoiceSettings: (patch) => call('setVoiceSettings', patch),
+  setVoiceMeter: (on) => call('setVoiceMeter', { on }),
+  voiceCapture: (result) => call('voiceCapture', result),
+  openMicSettings: () => call('openMicSettings'),
+  setWindowMode: (mode) => call('setWindowMode', { mode }),
+  windowControl: (action) => call('windowControl', { action }),
   onEvent: (listener) => {
     const handler = (_e: Electron.IpcRendererEvent, msg: Parameters<typeof listener>[0]) => listener(msg)
     ipcRenderer.on('recall:event', handler)
@@ -36,3 +43,9 @@ const api: RecallApi = {
 }
 
 contextBridge.exposeInMainWorld('recall', Object.freeze(api))
+
+// A MessagePort can't cross contextBridge, so the audio port for voice is handed to the page with
+// window.postMessage (Electron's documented pattern). The page sends audio on it and nothing else.
+const page = globalThis as unknown as { postMessage(message: unknown, targetOrigin: string, transfer?: unknown[]): void }
+ipcRenderer.on('recall:audio-port', (e) => page.postMessage({ recallAudio: 'port' }, '*', e.ports))
+ipcRenderer.on('recall:audio-stop', () => page.postMessage({ recallAudio: 'stop' }, '*'))

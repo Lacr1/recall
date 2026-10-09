@@ -4,7 +4,18 @@ import type { View } from '../App'
 
 let askCounter = 0
 
-export function AskView({ status, listeners, onNavigate }: { status: AppStatus; listeners: Set<(e: AskEvent) => void>; onNavigate: (v: View) => void }) {
+export function AskView({
+  status,
+  listeners,
+  onNavigate,
+  initialQuestion
+}: {
+  status: AppStatus
+  listeners: Set<(e: AskEvent) => void>
+  onNavigate: (v: View) => void
+  /** Filled in by "Open in Recall" from the voice popup, ready to send or edit. */
+  initialQuestion?: { text: string; n: number }
+}) {
   const [question, setQuestion] = useState('')
   const [asked, setAsked] = useState<string>()
   const [sources, setSources] = useState<AskSource[]>([])
@@ -14,6 +25,10 @@ export function AskView({ status, listeners, onNavigate }: { status: AppStatus; 
   const [invalid, setInvalid] = useState<number[]>([])
   const [focusSource, setFocusSource] = useState<number>()
   const currentId = useRef(0)
+
+  useEffect(() => {
+    if (initialQuestion) setQuestion(initialQuestion.text)
+  }, [initialQuestion?.n])
 
   useEffect(() => {
     const l = (e: AskEvent) => {
