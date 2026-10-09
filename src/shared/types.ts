@@ -44,10 +44,16 @@ export interface IndexProgress {
   chunks: number
 }
 
+export type IndexProblemCode = 'damaged' | 'newer_version' | 'migration_failed' | 'cannot_open'
+
 export interface AppStatus {
   ai: AiStatus
   progress: IndexProgress
   folders: FolderInfo[]
+  /** The index can't be used; the engine runs in problem mode and only offers a rebuild (plan doc 02 §5.13). */
+  problem?: { code: IndexProblemCode; message: string }
+  /** The index was rebuilt from the saved folder list on this start. */
+  rebuilt?: boolean
 }
 
 export interface HighlightRange {
@@ -136,7 +142,10 @@ export interface RecallErrorShape {
   message: string
 }
 
-// Engine events pushed through main to the renderer.
+// Engine events pushed through main to the renderer. Main adds engineRestarted (after a crash) and
+// engineStopped (after repeated crashes, when it stops restarting).
 export type EngineEvent =
   | { event: 'status'; data: AppStatus }
   | { event: 'ask'; data: AskEvent }
+  | { event: 'engineRestarted' }
+  | { event: 'engineStopped' }

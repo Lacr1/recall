@@ -111,7 +111,7 @@ export function AskView({ status, listeners, onNavigate }: { status: AppStatus; 
             const others = answered ? sources.filter((s) => !cited.has(s.n)) : []
             return (
               <>
-                <h3 className="section-label">{answered ? 'Cited sources' : 'Sources'}</h3>
+                <h2 className="section-label">{answered ? 'Cited sources' : 'Sources'}</h2>
                 <SourceList sources={primary} focus={focusSource} />
                 {others.length > 0 && (
                   <details className="other-sources">
@@ -131,21 +131,30 @@ export function AskView({ status, listeners, onNavigate }: { status: AppStatus; 
   )
 }
 
-/** Turns [n] into citation chips and marks "Inferred:" sentences. Invalid citations are dropped. */
+/**
+ * Turns [n] into citation chips and marks "Inferred:" sentences wherever they start in a paragraph.
+ * Invalid citations are dropped.
+ */
 function renderAnswer(text: string, sourceCount: number, onCite: (n: number) => void): ReactNode[] {
+  const withCitations = (sentence: string) =>
+    sentence.split(/(\[\d+\])/g).map((part, i) => {
+      const m = /^\[(\d+)\]$/.exec(part)
+      if (!m) return part
+      const n = Number(m[1])
+      if (n < 1 || n > sourceCount) return null
+      return (
+        <button key={i} className="cite-chip" onClick={() => onCite(n)} aria-label={`Source ${n}`}>
+          {n}
+        </button>
+      )
+    })
   return text.split(/\n+/).map((para, pi) => (
-    <p key={pi} className={/^\s*Inferred:/i.test(para) ? 'inferred' : undefined}>
-      {para.split(/(\[\d+\])/g).map((part, i) => {
-        const m = /^\[(\d+)\]$/.exec(part)
-        if (!m) return part
-        const n = Number(m[1])
-        if (n < 1 || n > sourceCount) return null
-        return (
-          <button key={i} className="cite-chip" onClick={() => onCite(n)} aria-label={`Source ${n}`}>
-            {n}
-          </button>
-        )
-      })}
+    <p key={pi}>
+      {para.split(/(?<=[.!?]\s+)(?=Inferred:)/i).map((sentence, si) => (
+        <span key={si} className={/^\s*Inferred:/i.test(sentence) ? 'inferred' : undefined}>
+          {withCitations(sentence)}
+        </span>
+      ))}
     </p>
   ))
 }

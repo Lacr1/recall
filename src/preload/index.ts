@@ -25,6 +25,8 @@ const api: RecallApi = {
   copyPath: (fileId) => call('copyPath', { fileId }),
   deleteAllData: () => call('deleteAllData'),
   getDataInfo: () => call('getDataInfo'),
+  rebuildIndex: () => call('rebuildIndex'),
+  restartEngine: () => call('restartEngine'),
   onEvent: (listener) => {
     const handler = (_e: Electron.IpcRendererEvent, msg: Parameters<typeof listener>[0]) => listener(msg)
     ipcRenderer.on('recall:event', handler)

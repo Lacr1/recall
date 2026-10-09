@@ -20,7 +20,8 @@ export class EngineSupervisor {
   constructor(
     private readonly dataDir: string,
     private readonly onEvent: (msg: unknown) => void,
-    private readonly onRestart: () => void
+    private readonly onRestart: () => void,
+    private readonly onGiveUp: () => void
   ) {}
 
   start(): void {
@@ -49,13 +50,22 @@ export class EngineSupervisor {
       console.error(`[main] engine exited with code ${code}`)
       const now = Date.now()
       this.crashes = this.crashes.filter((t) => now - t < 5 * 60_000).concat(now)
-      if (this.crashes.length > 3) return // give up; UI shows the engine as unavailable
+      if (this.crashes.length > 3) {
+        this.onGiveUp() // the window offers "Restart indexer" (plan doc 02 §5.13)
+        return
+      }
       setTimeout(() => {
         this.start()
         this.onRestart()
       }, 1000 * this.crashes.length)
     })
     this.child = child
+  }
+
+  /** User-requested restart after the supervisor gave up: forget earlier crashes and start again. */
+  restart(): void {
+    this.crashes = []
+    if (!this.child) this.start()
   }
 
   call<T = unknown>(method: string, params: unknown = {}, timeoutMs = 60_000): Promise<T> {

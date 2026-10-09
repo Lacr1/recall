@@ -15,7 +15,7 @@
 | Search | RRF over keyword-any, keyword-all, meaning, and file-name lists; meaning-only results trimmed by a cosine margin; snippets with highlights; match reasons; duplicate collapse; low-confidence flag | Filters, temporal ranking and version grouping not built |
 | Ask | Grounded answers from top passages with `qwen2.5:3b`, streamed, numbered citations validated, abstention marker, "Inferred:" labelling | No JSON-schema output or quote verification (plan §9) |
 | UI | Onboarding, search + evidence, document detail, Ask, Folders, Settings (AI status, data size, delete all data), status bar | No global shortcut, no search history |
-| Security | contextIsolation, sandbox, CSP, navigation/window/permission denial, renderer network blocked, loopback-only `fetch` guard in engine, open-file guard (IDs, realpath, root check, executable denylist), blocked system/AppData folders | No fuses set; no firewall-log audit performed |
+| Security | contextIsolation, sandbox, CSP, navigation/window/permission denial, renderer network blocked, loopback-only socket-level guard in main and engine, no proxy auto-detection, open-file guard (IDs, realpath, root check, executable denylist), blocked system/AppData folders | No fuses set; no firewall-log audit performed |
 | Packaging | electron-builder NSIS per-user installer, unsigned (138 MB) | — |
 
 ## Verification evidence (all run on 2026-10-09)
@@ -23,13 +23,17 @@
 | Check | Command | Result |
 |---|---|---|
 | Typecheck | `npm run typecheck` | pass |
-| Unit + integration (no model, network guard on) | `npm test` | **25 / 25 passed** |
+| Unit + integration (no model, network guard on) | `npm test` | **45 / 45 passed** |
+| Network audit (S3-07, automated part) | `npm run audit:network` | built and packaged app: zero non-loopback connections or lookups across guard log, Chromium net log and Windows TCP table. See [network-audit-2026-10-09.md](network-audit-2026-10-09.md) |
+| Crash loop (S1-08) | `npm test`, `CRASH_SEED=<n>` | 20 kills per run, 8 seeds: always consistent, final index identical to a clean one. See [s1-08-crash-loop.md](s1-08-crash-loop.md) |
 | Retrieval eval, live model | `npm run test:live` → `eval-results/latest.md` | see below |
 | Ask, live model | `npm run test:live` (ask.test.ts) | 2 / 2 passed: cited answer for the Acme payment question (17.7 s); abstained on "When does my passport expire?" (6.5 s) |
 | App smoke (dev build) | `electron . --smoke-test=tests/fixtures/corpus` | exit 0; 18 files, 29 chunks, all 3 queries correct top file, 32–37 ms; no renderer errors |
 | App smoke (dev server) | `npm run dev -- --smoke-test=…` | ok (renderer loads under CSP with HMR) |
 | App smoke (**packaged** `Recall.exe`) | `dist/win-unpacked/Recall.exe --smoke-test=…` | exit 0; same results |
 | Visual check | `--smoke-screenshots` | 7 screens captured and reviewed |
+| End-to-end + accessibility (S2-11) | `npm run test:e2e` | **14 / 14 passed** on the built app and on the packaged `Recall.exe`; axe: 0 findings at any severity on 17 screen states. See [s2-11-e2e.md](s2-11-e2e.md) |
+| Recovery (S3-04) | `npm test`, `npm run test:e2e` | damaged index → notice → rebuild from the same folders; failed upgrade → backup restored; engine killed during indexing → restarts, index consistent; repeated crashes → "Restart indexer". See [s3-04-recovery.md](s3-04-recovery.md) |
 
 ### Retrieval eval (synthetic corpus, 18 files, 20 answerable + 5 negative queries, nomic-embed-text)
 
@@ -55,7 +59,8 @@
 ## Not verified / known gaps
 
 - The offline procedure ([07 §8](../app-plan/07-testing-and-acceptance.md)) has **not** been run, so Recall is "designed for offline use", not verified offline.
-- No OS-level network audit. Only the in-process `fetch` guard (engine, tests) and renderer request blocking are in place.
-- **Not exercised by automation:** the native folder picker, the "Start Ollama" button, the model download flow, and stopping Ollama mid-session. The code paths exist; check them by hand before the demo.
+- The automated network audit passes (no connections leave the machine in normal use), but the manual offline run with adapters off and the Windows Firewall log audit have not been done.
+- **Not exercised by automation:** the native folder picker dialog itself (E2E replaces it) and the "Start Ollama" button. The model download flow and Ollama stopping mid-session are covered by E2E against a fake Ollama; check both once by hand with the real one before the demo.
+- **OneDrive online-only files are not detected** (S3-03 skipped). Indexing a OneDrive-synced folder may make Windows download those files. For the demo, use `tests/fixtures/corpus` or a folder that is not synced.
 - Large real-world folders have not been tried. Expect roughly 7 chunks/s for the meaning phase on this CPU.
 - `qwen2.5:3b` is research-licensed: fine for the demo, not as a shipped default (D-04).

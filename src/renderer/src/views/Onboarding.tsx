@@ -117,7 +117,7 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
   const embedPct = pct(progress.embedDone, progress.embedTotal)
 
   return (
-    <div className="onboarding">
+    <main className="onboarding">
       <div className="onboarding-card">
         <Stepper step={step} onBack={setStep} />
 
@@ -211,7 +211,6 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
                           className={`suggest ${added ? 'added' : ''}`}
                           disabled={viaParent || pending !== undefined}
                           aria-pressed={added}
-                          aria-label={`${s.label} (${s.path})`}
                           title={folder ? `Click to remove ${s.label}` : viaParent ? 'Included in a folder you added' : undefined}
                           onClick={() => void (folder ? removeFolder(folder.id) : addSuggested(s.id))}
                         >
@@ -240,7 +239,7 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
               </div>
             )}
             <div>
-              <button className="btn" onClick={addFolder}>{suggestions.length > 0 ? 'Choose another folder…' : '+ Add folder…'}</button>
+              <button className="btn" onClick={addFolder}>{suggestions.length > 0 ? 'Choose another folder…' : 'Choose a folder…'}</button>
             </div>
             {error && <p className="error" role="alert">{error}</p>}
             <div>
@@ -337,6 +336,6 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }

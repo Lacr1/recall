@@ -67,7 +67,7 @@ Product assumptions are in [01 §9](01-product-specification.md). Technical assu
 |---|---|---|---|
 | TA-01 | better-sqlite3 v13's N-API prebuild loads unchanged in Node 24 and current Electron, including `utilityProcess` | Unverified (release notes say "should theoretically work") | S0-03 |
 | TA-02 | sqlite-vec loads from `app.asar.unpacked` in packaged builds | Unverified (known upstream issue #194; fork exists) | S0-03 |
-| TA-03 | Exact vector search is fast enough at ≤ 200k chunks | Unverified (author's older benchmarks suggest plausible) | S0-05 |
+| TA-03 | Exact vector search is fast enough at ≤ 200k chunks | **Verified 2026-10-09** for latency (p95 110 ms at 200k, in-memory JS); memory exceeds NFR-09 above ~100k chunks → S4-09 int8 | S0-05 ✓ |
 | TA-04 | `nomic-embed-text` effective context under Ollama ≥ 2,048 tokens | Unverified (library page says 2K; params mention 8192) | S0-04 |
 | TA-05 | Ollama stops generation when the client aborts the HTTP request | Unverified (not in API docs) | S6-01 |
 | TA-06 | `stat().ino` (bigint) is stable across rename/move on NTFS | Partially verified (Node issue discussion); safe-save editors may change it | S0-07 |

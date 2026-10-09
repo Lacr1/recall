@@ -42,7 +42,9 @@ export class Indexer {
     private readonly db: DB,
     private readonly vectors: VectorIndex,
     private readonly onChange: () => void,
-    private readonly onAiFailure: (err: OllamaError) => void
+    private readonly onAiFailure: (err: OllamaError) => void,
+    /** Lane errors other than expected ones; the engine uses it to stop on database damage. */
+    private readonly onLaneError: (err: unknown) => void = () => undefined
   ) {
     this.paused = getSetting(db, 'paused') === '1'
   }
@@ -240,10 +242,12 @@ export class Indexer {
         didWork = await step()
       } catch (err) {
         console.error(`[engine] ${name} lane error:`, (err as Error).name, (err as { code?: string }).code ?? '')
+        this.onLaneError(err)
         await sleep(1000)
       }
       if (didWork) {
         this.onChange()
+        this.wake() // work here usually creates work for the next lane
         await yieldLoop()
       } else await this.idle(10_000)
     }
@@ -456,8 +460,9 @@ export class Indexer {
       const insert = this.db.prepare(
         `INSERT INTO chunks(content_id, ord, text, char_start, char_end, page_start, page_end, section_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
+      let replaced = 0
       this.db.transaction(() => {
-        this.db.prepare('DELETE FROM chunks WHERE content_id = ?').run(row.id)
+        replaced = this.db.prepare('DELETE FROM chunks WHERE content_id = ?').run(row.id).changes
         chunks.forEach((c, i) =>
           insert.run(row.id, i, c.text, c.start, c.end, c.pageStart ?? null, c.pageEnd ?? null, c.section ?? null)
         )
@@ -468,7 +473,8 @@ export class Indexer {
           )
           .run(doc.title ?? null, doc.pageCount ?? null, doc.text.length, chunks.length, chunks.length, row.id)
       })()
-      this.vectors.invalidate()
+      // New contents have no vectors yet; only re-extracted ones need their old vectors dropped.
+      if (replaced > 0) this.vectors.removeContents(new Set([row.id]))
     } catch (err) {
       if (err instanceof ExtractError && err.code !== 'timeout' && err.code !== 'failed') {
         this.db.prepare("UPDATE contents SET extract_status = ?, embed_status = 'not_applicable' WHERE id = ?").run(err.code, row.id)
@@ -515,18 +521,20 @@ export class Indexer {
 
   private gc(immediate: boolean): void {
     const now = Date.now()
-    const res = this.db.transaction(() => {
+    const removed = this.db.transaction(() => {
       this.db
         .prepare(
           'UPDATE contents SET orphaned_at = ? WHERE orphaned_at IS NULL AND NOT EXISTS (SELECT 1 FROM files WHERE content_id = contents.id)'
         )
         .run(now)
-      return this.db
-        .prepare('DELETE FROM contents WHERE orphaned_at IS NOT NULL AND orphaned_at <= ? AND NOT EXISTS (SELECT 1 FROM files WHERE content_id = contents.id)')
-        .run(immediate ? now : now - ORPHAN_GRACE_MS).changes
+      const doomed = 'orphaned_at IS NOT NULL AND orphaned_at <= ? AND NOT EXISTS (SELECT 1 FROM files WHERE content_id = contents.id)'
+      const cutoff = immediate ? now : now - ORPHAN_GRACE_MS
+      const ids = (this.db.prepare(`SELECT id FROM contents WHERE ${doomed}`).all(cutoff) as { id: number }[]).map((r) => r.id)
+      if (ids.length) this.db.prepare(`DELETE FROM contents WHERE ${doomed}`).run(cutoff)
+      return new Set(ids)
     })()
-    if (res > 0) {
-      this.vectors.invalidate()
+    if (removed.size > 0) {
+      this.vectors.removeContents(removed)
       this.onChange()
     }
   }

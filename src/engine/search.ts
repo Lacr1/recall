@@ -187,7 +187,7 @@ export class SearchService {
     return this.db
       .prepare(
         `SELECT x.id fileId, x.name, f.path || '\\' || x.rel_path path, f.path folderPath, x.ext, x.size, x.mtime_ms mtimeMs
-         FROM files x JOIN folders f ON f.id = x.folder_id WHERE x.content_id = ? AND x.status = 'linked' ORDER BY x.mtime_ms DESC`
+         FROM files x JOIN folders f ON f.id = x.folder_id WHERE x.content_id = ? AND x.status = 'linked' ORDER BY x.mtime_ms DESC, path`
       )
       .all(contentId) as FileRef[]
   }

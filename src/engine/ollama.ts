@@ -11,6 +11,9 @@ export class OllamaError extends Error {
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]', '::1'])
 
+// End-to-end tests point Recall at a fake Ollama server; the loopback check still applies to it.
+const BASE_URL = process.env.RECALL_OLLAMA_URL || OLLAMA_URL
+
 /** Recall only ever talks to Ollama on this computer (plan doc 06 §8). */
 function assertLoopback(url: string): void {
   if (!LOOPBACK.has(new URL(url).hostname)) throw new OllamaError('unreachable', 'Only a local Ollama endpoint is allowed')
@@ -22,7 +25,7 @@ export function isCloudModel(name: string): boolean {
 }
 
 async function request(path: string, body: unknown, timeoutMs: number, signal?: AbortSignal): Promise<Response> {
-  const url = OLLAMA_URL + path
+  const url = BASE_URL + path
   assertLoopback(url)
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(new OllamaError('timeout')), timeoutMs)
