@@ -6,7 +6,7 @@
   "author": "Recall team",
   "main": "./out/main/index.js",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=22.12"
   },
