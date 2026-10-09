@@ -1,15 +1,22 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, screen, session, shell, type IpcMainInvokeEvent } from 'electron'
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { readdir, realpath, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { EngineError, EngineSupervisor } from './engine'
 import { runSmokeTest } from './smoke'
+import { allowPermissionCheck, allowPermissionRequest } from './permissions'
+import { VoiceController } from './voice/controller'
+import { voiceSettingsPatch } from './voice/settings'
+import { APP_MIN_SIZE, applyWindowMode, fitSize, parseWindowAction, parseWindowMode, startsInOnboarding, WINDOW_SIZE, type WindowMode } from './window-frame'
+import { runVoiceSmoke } from './voice/smoke'
 import { installNetworkGuard } from '../engine/network-guard'
 import { removeIndexFiles } from '../engine/index-files'
 import { isInsideRoot, isSafeLocalPath, isSafeToOpen } from '../engine/paths'
 import { RENDERER_METHODS } from '../shared/constants'
-import type { FolderSuggestion, SuggestedFolderId } from '../shared/types'
+import type { AskEvent, FolderSuggestion, SuggestedFolderId } from '../shared/types'
+import { MIC_PROBLEM_CODES, type MicProblemCode } from '../shared/voice'
+import appIcon from '../../build/icon.png?asset'
 
 // Main never needs the network itself; the renderer's requests are filtered separately in hardenSession().
 installNetworkGuard('main')
@@ -23,38 +30,108 @@ const OLLAMA_APP = path.join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Ollama
 const DEV_URL = process.env.ELECTRON_RENDERER_URL
 
 const SMOKE_FOLDER = process.argv.find((a) => a.startsWith('--smoke-test='))?.slice('--smoke-test='.length)
+const VOICE_SMOKE = process.argv.find((a) => a.startsWith('--voice-smoke='))?.slice('--voice-smoke='.length)
+// Bundled voice models (plan 12 D-17): resources/voice in dev, <install>/resources/voice when packaged.
+const VOICE_DIR = app.isPackaged ? path.join(process.resourcesPath, 'voice') : path.join(app.getAppPath(), 'resources', 'voice')
 
 // Smoke and end-to-end runs use their own Electron profile so they work while a normal Recall window is open.
 // It sits beside the data folder, not inside it, so "Delete all data" never removes a profile that is in use.
-const ISOLATED_RUN = !!SMOKE_FOLDER || process.env.RECALL_E2E === '1'
+const ISOLATED_RUN = !!SMOKE_FOLDER || !!VOICE_SMOKE || process.env.RECALL_E2E === '1'
+// Started by Windows at login (FR-VOICE-14): stay in the tray until the user opens Recall.
+const START_HIDDEN = process.argv.includes('--hidden')
+
+// End-to-end tests only: Chromium plays this WAV as the microphone.
+if (process.env.RECALL_E2E === '1' && process.env.RECALL_FAKE_MIC) {
+  app.commandLine.appendSwitch('use-fake-device-for-media-stream')
+  app.commandLine.appendSwitch('use-file-for-fake-audio-capture', process.env.RECALL_FAKE_MIC)
+}
 
 const SUGGESTED_FOLDERS: Record<SuggestedFolderId, string> = { documents: 'Documents', desktop: 'Desktop', downloads: 'Downloads' }
 
 let win: BrowserWindow | undefined
+let windowMode: WindowMode = 'app'
+// Set when the user really quits (tray menu), so closing the window no longer just hides it.
+let quitting = false
 
 if (ISOLATED_RUN) app.setPath('userData', DATA_DIR + '-profile')
 
 if (!ISOLATED_RUN && !app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
-    if (win) {
-      if (win.isMinimized()) win.restore()
-      win.focus()
-    }
-  })
+  app.on('second-instance', () => showWindow())
   app.whenReady().then(main)
+}
+
+function showWindow(): void {
+  if (!win || win.isDestroyed()) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
+function quitApp(): void {
+  quitting = true
+  if (win && !win.isDestroyed()) win.close()
+  else app.quit()
+}
+
+const voice = new VoiceController({
+  dataDir: DATA_DIR,
+  voiceDir: VOICE_DIR,
+  isolated: ISOLATED_RUN,
+  window: () => win,
+  send: (e) => win?.webContents.send('recall:event', e),
+  showWindow,
+  quit: quitApp,
+  exchange: {
+    call: (method, params) => engine.call(method, params),
+    revealFile: async (fileId) => {
+      const checked = await resolveChecked(fileId)
+      if (checked.ok) shell.showItemInFolder(checked.real)
+    },
+    revealFolder: async (folderPath) => {
+      const real = await checkedFolder(folderPath)
+      if (real) await shell.openPath(real)
+    },
+    openFile: async (fileId) => void (await openIndexedFile(fileId)),
+    openInRecall: (view, text) => {
+      showWindow()
+      win?.webContents.send('recall:event', { event: 'voiceOpen', view, text })
+    },
+    openSettings: () => {
+      showWindow()
+      win?.webContents.send('recall:event', { event: 'voiceOpen', view: 'settings', text: '' })
+    },
+    openMicSettings: () => void shell.openExternal('ms-settings:privacy-microphone'),
+    devUrl: DEV_URL
+  }
+})
+
+// End-to-end tests only: drive a spoken exchange without speech.
+if (process.env.RECALL_E2E === '1') {
+  ;(globalThis as unknown as { __recallVoice: unknown }).__recallVoice = {
+    wake: () => voice.simulate('wake'),
+    say: (text: string) => voice.simulate('utterance', text)
+  }
 }
 
 const engine = new EngineSupervisor(
   DATA_DIR,
-  (msg) => win?.webContents.send('recall:event', msg),
+  (msg) => {
+    const m = msg as { event?: string; data?: unknown }
+    if (m.event === 'ask') voice.onAskEvent(m.data as AskEvent)
+    win?.webContents.send('recall:event', msg)
+  },
   () => win?.webContents.send('recall:event', { event: 'engineRestarted' }),
   () => win?.webContents.send('recall:event', { event: 'engineStopped' })
 )
 
 function main(): void {
   hardenSession()
+  if (VOICE_SMOKE) {
+    void runVoiceSmoke(VOICE_SMOKE, VOICE_DIR).then((code) => app.exit(code))
+    return
+  }
   engine.start()
   registerIpc()
   createWindow()
@@ -65,20 +142,40 @@ function main(): void {
     })
     return
   }
-  app.on('window-all-closed', async () => {
-    await engine.stop()
-    app.quit()
-  })
+  voice.start()
+  app.on('window-all-closed', () => void shutdown())
+}
+
+let shuttingDown = false
+/** Stops the engine and voice, then quits. Runs once. */
+async function shutdown(): Promise<void> {
+  if (shuttingDown) return
+  shuttingDown = true
+  await Promise.all([engine.stop(), voice.stop()])
+  app.quit()
 }
 
 function createWindow(): void {
+  let foldersJson: string | undefined
+  try {
+    foldersJson = readFileSync(path.join(DATA_DIR, 'folders.json'), 'utf8')
+  } catch {
+    // No folder list yet: first run.
+  }
+  windowMode = startsInOnboarding(foldersJson) ? 'onboarding' : 'app'
+  const onboarding = windowMode === 'onboarding'
+  const size = fitSize(WINDOW_SIZE[windowMode], screen.getPrimaryDisplay().workArea)
   win = new BrowserWindow({
-    width: 1280,
-    height: 820,
-    minWidth: 900,
-    minHeight: 600,
+    ...size,
+    minWidth: onboarding ? size.width : APP_MIN_SIZE.width,
+    minHeight: onboarding ? size.height : APP_MIN_SIZE.height,
+    resizable: !onboarding,
+    maximizable: !onboarding,
+    // Recall draws its own title bar (TitleBar); Windows keeps the shadow, resize edges and snapping.
+    frame: false,
     show: false,
     title: 'Recall',
+    icon: appIcon,
     // Matches --bg so the splash appears without a light flash in dark mode.
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#151617' : '#f7f7f5',
     autoHideMenuBar: true,
@@ -91,7 +188,26 @@ function createWindow(): void {
       spellcheck: false
     }
   })
-  win.once('ready-to-show', () => win?.show())
+  win.once('ready-to-show', () => {
+    if (!(START_HIDDEN && voice.enabled)) win?.show()
+  })
+  // While voice is on, closing hides Recall to the tray so it keeps listening (plan 12 D-18).
+  win.on('close', (e) => {
+    if (!quitting && voice.keepRunningOnClose()) {
+      e.preventDefault()
+      win?.hide()
+    }
+  })
+  win.webContents.on('did-finish-load', () => voice.rendererLoaded())
+  // The title bar shows Maximize or Restore.
+  win.on('maximize', () => win?.webContents.send('recall:event', { event: 'window', maximized: true }))
+  win.on('unmaximize', () => win?.webContents.send('recall:event', { event: 'window', maximized: false }))
+  // The main window only really closes when Recall quits (otherwise it hides), and the voice popup must not keep
+  // the app alive behind it.
+  win.on('closed', () => {
+    win = undefined
+    if (!SMOKE_FOLDER) void shutdown()
+  })
   win.webContents.on('will-navigate', (e) => e.preventDefault())
   win.webContents.on('will-attach-webview', (e) => e.preventDefault())
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
@@ -100,11 +216,16 @@ function createWindow(): void {
   else void win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }
 
-/** Renderer gets no network and no permissions (plan doc 06 §5). */
+/** Renderer gets no network and no permissions except microphone audio for voice (plan doc 06 §5, plan 12 SEC-13). */
 function hardenSession(): void {
   const ses = session.defaultSession
-  ses.setPermissionRequestHandler((_wc, _perm, cb) => cb(false))
-  ses.setPermissionCheckHandler(() => false)
+  ses.setPermissionRequestHandler((wc, permission, cb, details) => {
+    const mediaTypes = 'mediaTypes' in details ? details.mediaTypes : undefined
+    cb(allowPermissionRequest({ permission, fromMainWindow: wc === win?.webContents, url: details.requestingUrl, mediaTypes, devUrl: DEV_URL }))
+  })
+  ses.setPermissionCheckHandler((wc, permission, origin, details) =>
+    allowPermissionCheck({ permission, fromMainWindow: !!wc && wc === win?.webContents, mediaType: details.mediaType, url: origin, devUrl: DEV_URL })
+  )
   ses.webRequest.onBeforeRequest((details, cb) => {
     const url = new URL(details.url)
     const devLocal = !!DEV_URL && ['localhost', '127.0.0.1'].includes(url.hostname)
@@ -147,6 +268,7 @@ function registerIpc(): void {
   const validators: Record<(typeof RENDERER_METHODS)[number], (p: Record<string, unknown>) => unknown> = {
     getStatus: () => ({}),
     search: (p) => ({ requestId: int(p.requestId), query: String(p.query ?? '').slice(0, 500) }),
+    getSearchSuggestions: () => ({}),
     getDocument: (p) => ({ fileId: int(p.fileId) }),
     listFailures: () => ({}),
     removeFolder: (p) => ({ folderId: int(p.folderId) }),
@@ -166,6 +288,8 @@ function registerIpc(): void {
   handle('deleteAllData', async () => {
     await engine.stop()
     await rm(DATA_DIR, { recursive: true, force: true })
+    // The voice settings file was in the data folder: voice turns off and the login item is removed.
+    await voice.reset()
     await session.defaultSession.clearStorageData()
     engine.start()
     // Reloaded from here: a renderer-initiated reload is cancelled by the will-navigate block.
@@ -185,7 +309,38 @@ function registerIpc(): void {
     setImmediate(() => win?.webContents.reload())
   })
 
+  // The popup's channel: accepted only from the popup's own page, and every action is validated.
+  ipcMain.handle('popup:action', (e, a) => voice.popupAction(e.senderFrame, a))
+
+  handle('getVoiceStatus', () => voice.status())
+  handle('setVoiceSettings', (p) => voice.update(voiceSettingsPatch(p)))
+  handle('setVoiceMeter', (p) => voice.setMeter(p.on === true))
+  handle('voiceCapture', (p) => {
+    if (p.ok === true) voice.captureResult({ ok: true })
+    else if (MIC_PROBLEM_CODES.includes(p.code as MicProblemCode)) voice.captureResult({ code: p.code as MicProblemCode })
+  })
+  // Fixed Windows settings page; nothing from the renderer is passed through.
+  handle('openMicSettings', () => shell.openExternal('ms-settings:privacy-microphone'))
+
   handle('getDataInfo', async () => ({ path: DATA_DIR, bytes: await dirSize(DATA_DIR) }))
+
+  // The custom title bar (the window has no Windows frame).
+  handle('setWindowMode', (p) => {
+    const mode = parseWindowMode(p.mode)
+    if (!mode || !win || mode === windowMode) return
+    windowMode = mode
+    applyWindowMode(win, mode)
+  })
+  handle('windowControl', (p) => {
+    const action = parseWindowAction(p.action)
+    if (!win || !action) return
+    if (action === 'minimize') win.minimize()
+    else if (action === 'close') win.close()
+    else if (win.isMaximizable()) {
+      if (win.isMaximized()) win.unmaximize()
+      else win.maximize()
+    }
+  })
 
   const addFolderPath = async (folderPath: string) => {
     try {
@@ -217,15 +372,7 @@ function registerIpc(): void {
     return addFolderPath(app.getPath(id as SuggestedFolderId))
   })
 
-  handle('openFile', async (p) => {
-    const checked = await resolveChecked(int(p.fileId))
-    if (!checked.ok) return checked
-    if (!isSafeToOpen(path.extname(checked.real).slice(1))) {
-      return fail('NOT_OPENABLE', 'Recall does not launch this type of file because Windows may run it. Use "Show in folder" instead.')
-    }
-    const err = await shell.openPath(checked.real)
-    return err ? fail('OPEN_FAILED', err) : { ok: true }
-  })
+  handle('openFile', (p) => openIndexedFile(int(p.fileId)))
 
   handle('revealFile', async (p) => {
     const checked = await resolveChecked(int(p.fileId))
@@ -250,6 +397,31 @@ function registerIpc(): void {
 
   // The only external link Recall opens, to a fixed URL.
   handle('openOllamaDownload', () => shell.openExternal('https://ollama.com/download/windows'))
+}
+
+async function openIndexedFile(fileId: number): Promise<{ ok: true } | Fail> {
+  const checked = await resolveChecked(fileId)
+  if (!checked.ok) return checked
+  if (!isSafeToOpen(path.extname(checked.real).slice(1))) {
+    return fail('NOT_OPENABLE', 'Recall does not launch this type of file because Windows may run it. Use "Show in folder" instead.')
+  }
+  const err = await shell.openPath(checked.real)
+  return err ? fail('OPEN_FAILED', err) : { ok: true }
+}
+
+/** A folder found by voice may be opened only if it really is one of the added folders or inside one. */
+async function checkedFolder(folderPath: string): Promise<string | undefined> {
+  if (!isSafeLocalPath(folderPath)) return undefined
+  let real: string
+  try {
+    real = await realpath(folderPath)
+    if (!(await stat(real)).isDirectory()) return undefined
+  } catch {
+    return undefined
+  }
+  const status = await engine.call<{ folders: { path: string }[] }>('getStatus')
+  const key = (p: string) => p.replace(/[\\/]+$/, '').toLowerCase()
+  return status.folders.some((f) => key(f.path) === key(real) || isInsideRoot(real, f.path)) ? real : undefined
 }
 
 /** Open-file guard (plan doc 06 §5.1): resolve by id, re-validate the real path on disk. */

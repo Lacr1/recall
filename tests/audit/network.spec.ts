@@ -50,6 +50,9 @@ test('audit: whole app flow with real Ollama', async () => {
   await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: CHOOSE_FOLDER }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
+  // Voice step: left off.
+  await expect(page.getByRole('heading', { name: 'Talk to Recall' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Start searching' }).click()
   const status = await waitForIndexed(page)
   expect(status.ai.state).toBe('ready')

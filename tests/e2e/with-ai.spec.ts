@@ -44,6 +44,9 @@ test('onboarding downloads the search model, then adds a folder', async () => {
   await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: CHOOSE_FOLDER }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
+  // Voice step: left off.
+  await expect(page.getByRole('heading', { name: 'Talk to Recall' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Start searching' }).click()
   await expectAccessible(page, 'search: empty')
 
@@ -51,6 +54,50 @@ test('onboarding downloads the search model, then adds a folder', async () => {
   expect(status.ai.state).toBe('ready')
   expect(status.progress.embedTotal).toBeGreaterThan(0)
   expect(ollama.requests.some((r) => r.path === '/api/pull')).toBe(true)
+})
+
+test('suggests example searches from the indexed files, and moves the search box up for results', async () => {
+  const { page } = run
+  const heading = page.getByRole('heading', { name: 'Search by what you remember' })
+  const examples = page.getByRole('group', { name: 'Example searches' }).getByRole('button')
+  await expect
+    .poll(async () => {
+      const texts = await examples.allTextContents()
+      return texts.length === 3 && !texts.some((t) => t.includes('50% initial payment'))
+    })
+    .toBe(true)
+
+  const example = (await examples.first().textContent())!.replace(/[“”]/g, '')
+  await examples.first().click()
+  await expect(heading).toBeHidden()
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await page.waitForTimeout(1800) // a search is remembered once it has rested with results
+  await page.getByRole('button', { name: 'Clear search' }).click()
+  await expect(heading).toBeVisible()
+
+  const recent = page.getByRole('region', { name: 'Recent searches' })
+  await expect(recent.getByRole('button', { name: example, exact: true })).toBeVisible()
+  await expectAccessible(page, 'search: empty with recent searches')
+  await recent.getByRole('button', { name: example, exact: true }).click()
+  await expect(page.getByRole('searchbox')).toHaveValue(example)
+  await page.keyboard.press('Escape')
+  await recent.getByRole('button', { name: `Remove “${example}” from recent searches` }).click()
+  await expect(recent).toBeHidden()
+})
+
+test('shows placeholder results while a slow search runs', async () => {
+  const { page } = run
+  ollama.embedDelayMs = 1500
+  try {
+    await page.getByRole('searchbox').fill('dishwasher warranty period')
+    await expect(page.locator('.skeleton-card').first()).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Results' })).toHaveAttribute('aria-busy', 'true')
+    await expect(page.getByRole('option').filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
+    await expect(page.locator('.skeleton-card')).toHaveCount(0)
+  } finally {
+    ollama.embedDelayMs = 0
+  }
+  await page.getByRole('button', { name: 'Clear search' }).click()
 })
 
 test('searches by meaning and keywords and explains each match', async () => {

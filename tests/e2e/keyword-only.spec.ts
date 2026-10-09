@@ -42,7 +42,14 @@ test('onboarding without local AI, by keyboard only', async () => {
   await tabTo(page, 'Continue')
   await page.keyboard.press('Enter')
 
+  await expect(page.getByRole('heading', { name: 'Talk to Recall' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: 'Off' })).toBeChecked()
+  await expectAccessible(page, 'onboarding: voice off')
+  await tabTo(page, 'Continue')
+  await page.keyboard.press('Enter')
+
   await expect(page.getByRole('heading', { name: "You're all set" })).toBeVisible()
+  await expect(page.getByText('Voice is off. Turn it on in Settings → Voice.')).toBeVisible()
   await expectAccessible(page, 'onboarding: ready')
   await tabTo(page, 'Start searching')
   await page.keyboard.press('Enter')

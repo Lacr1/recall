@@ -10,7 +10,7 @@
 - Node.js 22.12+ (developed on 24.21)
 - [Ollama](https://ollama.com/download/windows) running, with models:
   - `ollama pull nomic-embed-text` (search by meaning, 274 MB, required for semantic search)
-  - `ollama pull qwen2.5:3b` (optional, for **Ask**; research licence, demo only — see plan decision D-04)
+  - `ollama pull qwen2.5:3b` (optional, for **Ask**; research licence, demo only; see plan decision D-04)
 
 Without Ollama, Recall still works in **keyword-only** mode and says so.
 
@@ -18,6 +18,7 @@ Without Ollama, Recall still works in **keyword-only** mode and says so.
 
 ```
 npm ci
+node scripts/fetch-voice-models.mjs   # once: voice models into resources/voice (about 160 MB, checksums pinned)
 npm run dev          # development, hot reload
 npm run build && npm start   # production build
 npm run package      # Windows installer -> dist/Recall-Setup-0.1.0.exe (unsigned)
@@ -28,10 +29,11 @@ Index data lives in `%LOCALAPPDATA%\Recall\data` (override with `RECALL_DATA_DIR
 ## Test
 
 ```
-npm test             # 45 unit + integration tests incl. a 20-kill crash loop; no model or network needed
+npm test             # 216 unit + integration tests incl. a 20-kill crash loop; no model or network needed
                      # (CRASH_SEED=<n> npm test picks other kill points)
-npm run test:live    # needs Ollama: retrieval eval (writes eval-results/latest.md) + Ask checks
-npm run test:e2e     # builds, then drives the real app with a fake Ollama: 14 flows + accessibility scans
+npm run test:live    # needs Ollama: retrieval eval (writes eval-results/latest.md) + Ask checks;
+                     # also the voice models on synthetic speech (needs resources/voice)
+npm run test:e2e     # builds, then drives the real app with a fake Ollama: 34 flows (20 voice: fake mic, popup, onboarding) + accessibility scans
                      # (RECALL_E2E_EXE=dist/win-unpacked/Recall.exe npx playwright test runs them on the packaged app)
 npm run audit:network  # needs Ollama: full app flow, fails if anything connects outside this computer
                        # (RECALL_AUDIT_EXE=dist/win-unpacked/Recall.exe audits the packaged app)
@@ -44,6 +46,7 @@ Smoke test of the real app (engine process, renderer, searches), optionally with
 
 ```
 electron . --smoke-test=<folder> [--smoke-screenshots=<dir>]
+electron . --voice-smoke=tests/fixtures/voice/recall-find-my-resume.wav   # voice process: wake word + transcript
 ```
 
 ## Demo script (≈ 3 minutes)

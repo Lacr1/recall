@@ -8,6 +8,7 @@ import type {
   SearchResponse,
   SuggestedFolderId
 } from '../shared/types'
+import type { MicProblemCode, VoiceSettings, VoiceStatus } from '../shared/voice'
 
 export type ActionResult = { ok: true } | { ok: false; code: string; message: string }
 
@@ -15,6 +16,8 @@ export type ActionResult = { ok: true } | { ok: false; code: string; message: st
 export interface RecallApi {
   getStatus(): Promise<AppStatus>
   search(requestId: number, query: string): Promise<SearchResponse | null>
+  /** Example searches built from the user's own recent files; empty until some files have been read. */
+  getSearchSuggestions(): Promise<string[]>
   getDocument(fileId: number): Promise<DocumentView | null>
   listFailures(): Promise<FailureItem[]>
   addFolder(): Promise<{ folder?: FolderInfo; error?: string; cancelled?: boolean }>
@@ -36,6 +39,17 @@ export interface RecallApi {
   getDataInfo(): Promise<{ path: string; bytes: number }>
   rebuildIndex(): Promise<void>
   restartEngine(): Promise<void>
+  getVoiceStatus(): Promise<VoiceStatus>
+  setVoiceSettings(patch: Partial<VoiceSettings>): Promise<VoiceStatus>
+  /** Mic level events for the meter in onboarding and Settings. */
+  setVoiceMeter(on: boolean): Promise<void>
+  /** Reports whether the microphone opened; called by the capture module. */
+  voiceCapture(result: { ok: true } | { code: MicProblemCode }): Promise<void>
+  openMicSettings(): Promise<void>
+  /** Onboarding shows the window as just the setup card; the app is the normal resizable window. */
+  setWindowMode(mode: 'onboarding' | 'app'): Promise<void>
+  /** The custom title bar's buttons (the window has no Windows frame). */
+  windowControl(action: 'minimize' | 'maximize' | 'close'): Promise<void>
   onEvent(listener: (e: EngineEvent) => void): () => void
 }
 

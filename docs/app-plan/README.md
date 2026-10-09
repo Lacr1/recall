@@ -24,6 +24,7 @@ The repository was **empty** (no code, documents, dependencies, or experiments) 
 | 9 | [09 — Team and workflow](09-team-and-workflow.md) | Milestone loop, conventions, review checklist | Dev, reviewers |
 | 10 | [10 — Risks and open decisions](10-risks-and-open-decisions.md) | **Decisions needing approval**, risks, assumptions | Approvers |
 | 11 | [11 — Implementation backlog](11-implementation-backlog.md) | Ordered tasks for implementation sessions | Dev |
+| 12 | [12 — Voice assistant](12-voice-assistant.md) | Stage 8: "Recall" wake word, popup answers and copied paths, tray, onboarding step | Everyone |
 
 Approvers in a hurry: read §3 below, then [10 §1](10-risks-and-open-decisions.md) and [01 §7](01-product-specification.md).
 
@@ -57,3 +58,5 @@ A Windows installer for a per-user app that onboards the user (privacy promise �
 |---|---|
 | 2026-10-09 | Initial plan (12 documents). |
 | 2026-10-09 | Decisions: D-02 = this PC is the benchmark machine; D-03 = pull `nomic-embed-text` only; D-09 = synthetic corpus only; D-13 = deadline **2026-10-10**. With a one-day deadline, a hackathon cut was built instead of following Stage 0 → 3. What it includes, how it differs from the plan, and the evidence are in [docs/validation/hackathon-build.md](../validation/hackathon-build.md). The plan stays the reference for continuing toward the MVP. |
+| 2026-10-09 | Added [12 — Voice assistant](12-voice-assistant.md) (Stage 8, draft for approval): decisions D-16…D-24, risks R-17…R-24, backlog S8-01…S8-12. |
+| 2026-10-09 | Plan 12 approved. S8-01 done: sherpa-onnx confirmed (ADR-0015), Moonshine tiny for speech-to-text, new decision D-25 (LibriSpeech wake-word model), NFR-V-03/05 revised. See [s8-01-voice-spike.md](../validation/s8-01-voice-spike.md). |

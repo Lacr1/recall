@@ -1,0 +1,8 @@
+{
+  "name": "s8-01-voice-spike",
+  "private": true,
+  "description": "S8-01 speech stack spike. Never imported by src/.",
+  "dependencies": {
+    "sherpa-onnx-node": "1.13.8"
+  }
+}

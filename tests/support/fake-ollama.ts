@@ -17,6 +17,8 @@ export interface FakeOllamaOptions {
 export class FakeOllama {
   readonly requests: { method: string; path: string; model?: string }[] = []
   models: Set<string>
+  /** Slows /api/embed down, like a busy Ollama. */
+  embedDelayMs = 0
   private server?: http.Server
   private sockets = new Set<Socket>()
   private port = 0
@@ -64,6 +66,7 @@ export class FakeOllama {
     if (path === '/api/tags') return json(200, { models: [...this.models].map((name) => ({ name: `${name}:latest`, digest: 'fake' })) })
     if (path === '/api/embed') {
       if (!hasModel(body.model)) return json(404, { error: `model "${body.model}" not found, try pulling it first` })
+      if (this.embedDelayMs) await new Promise((r) => setTimeout(r, this.embedDelayMs))
       return json(200, { embeddings: (body.input as string[]).map(fakeEmbed) })
     }
     if (path === '/api/pull') {

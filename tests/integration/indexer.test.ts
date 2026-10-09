@@ -21,6 +21,7 @@ const { Indexer } = await import('../../src/engine/indexer')
 const { SearchService } = await import('../../src/engine/search')
 const { VectorIndex, toUnitVec } = await import('../../src/engine/vectors')
 const { readDocument } = await import('../../src/engine/documents')
+const { searchSuggestions } = await import('../../src/engine/suggestions')
 
 const CORPUS = path.resolve('tests/fixtures/corpus')
 // Not the OS temp dir: Recall refuses to index folders inside AppData.
@@ -106,6 +107,15 @@ describe('indexing the fixture corpus', () => {
     const r = query('bluebird').results[0]
     expect(r.primary.name).toMatch(/Bluebird|invoice/)
     expect(query('lisbon itinerary').results[0].reasons.some((x) => x.kind === 'filename')).toBe(true)
+  })
+
+  it('builds example searches from the indexed files that find those files', () => {
+    const suggestions = searchSuggestions(db)
+    expect(suggestions).toHaveLength(3)
+    expect(new Set(suggestions.map((s) => s.contentId)).size).toBe(3)
+    for (const s of suggestions) {
+      expect(query(s.query).results.slice(0, 3).map((r) => r.contentId), s.query).toContain(s.contentId)
+    }
   })
 
   it('reconstructs the full document text for the detail view', () => {
