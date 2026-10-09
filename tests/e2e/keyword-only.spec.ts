@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import path from 'node:path'
 import { FakeOllama } from '../support/fake-ollama'
-import { expectAccessible, launchRecall, tabTo, waitForIndexed, type RecallRun } from './recall'
+import { CHOOSE_FOLDER, expectAccessible, launchRecall, tabTo, waitForIndexed, type RecallRun } from './recall'
 
 // E2E flow 1 (first run without local AI → keyword search), driven only by keyboard (flow 7),
 // plus the renderer security checks from plan doc 07 §7.
@@ -23,12 +23,12 @@ test.afterAll(async () => {
 
 test('onboarding without local AI, by keyboard only', async () => {
   const { page } = run
-  await expect(page.getByRole('heading', { name: 'Recall' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Welcome to Recall' })).toBeVisible()
   await expectAccessible(page, 'onboarding: welcome')
   await expect(page.getByRole('button', { name: 'Get started' })).toBeFocused()
   await page.keyboard.press('Enter')
 
-  await expect(page.getByRole('heading', { name: 'Set up local AI' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Turn on smart search' })).toBeVisible()
   await expect(page.locator('.ai-state').first()).toHaveText(/Installed, not running|Not installed/)
   await expectAccessible(page, 'onboarding: local AI missing')
   await tabTo(page, 'Skip')
@@ -36,9 +36,14 @@ test('onboarding without local AI, by keyboard only', async () => {
 
   await expect(page.getByRole('heading', { name: 'Choose folders to remember' })).toBeVisible()
   await expectAccessible(page, 'onboarding: folders')
-  await tabTo(page, '+ Add folder')
+  await tabTo(page, CHOOSE_FOLDER)
   await page.keyboard.press('Enter')
   await expect(page.getByText(run.corpus)).toBeVisible()
+  await tabTo(page, 'Continue')
+  await page.keyboard.press('Enter')
+
+  await expect(page.getByRole('heading', { name: "You're all set" })).toBeVisible()
+  await expectAccessible(page, 'onboarding: ready')
   await tabTo(page, 'Start searching')
   await page.keyboard.press('Enter')
 

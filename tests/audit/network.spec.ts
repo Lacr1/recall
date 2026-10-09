@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { launchRecall, waitForIndexed, type RecallRun } from '../e2e/recall'
+import { CHOOSE_FOLDER, launchRecall, waitForIndexed, type RecallRun } from '../e2e/recall'
 
 // S3-07 automated network audit (plan doc 07 §8): drive the whole app with the real Ollama and record every network
 // attempt three ways — Recall's own guard (Node, main + engine), Chromium's net log (renderer, network service)
@@ -48,7 +48,8 @@ test('audit: whole app flow with real Ollama', async () => {
   // Onboarding with models present → add the fixture folder → index.
   await page.getByRole('button', { name: 'Get started' }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
-  await page.getByRole('button', { name: '+ Add folder…' }).click()
+  await page.getByRole('button', { name: CHOOSE_FOLDER }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Start searching' }).click()
   const status = await waitForIndexed(page)
   expect(status.ai.state).toBe('ready')

@@ -3,7 +3,7 @@ import { closeSync, openSync, rmSync, statSync, writeSync } from 'node:fs'
 import path from 'node:path'
 import { assertIndexConsistent, openDatabase } from '../../src/engine/db'
 import { FakeOllama } from '../support/fake-ollama'
-import { enginePid, expectAccessible, getStatus, launchRecall, waitForIndexed, type RecallRun } from './recall'
+import { CHOOSE_FOLDER, enginePid, expectAccessible, getStatus, launchRecall, waitForIndexed, type RecallRun } from './recall'
 
 // S3-04 recovery in the real app (plan doc 02 §5.13): the engine crashing while it indexes, the supervisor giving
 // up after repeated crashes, and a damaged index found on the next start. Run with RECALL_E2E_EXE set to cover the
@@ -34,7 +34,8 @@ test('the engine is killed three times while indexing: it restarts and the index
   const { page } = run
   await page.getByRole('button', { name: 'Get started' }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
-  await page.getByRole('button', { name: '+ Add folder…' }).click()
+  await page.getByRole('button', { name: CHOOSE_FOLDER }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Start searching' }).click()
 
   for (const delay of [150, 400, 700]) {

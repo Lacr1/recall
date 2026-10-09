@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { CHAT_MODEL } from '../../src/shared/constants'
 import { FakeOllama } from '../support/fake-ollama'
-import { expectAccessible, getStatus, launchRecall, waitForIndexed, type RecallRun } from './recall'
+import { CHOOSE_FOLDER, expectAccessible, getStatus, launchRecall, waitForIndexed, type RecallRun } from './recall'
 
 // E2E flows 2–6 from plan doc 07 §9, against a fake Ollama that starts without the search model.
 test.describe.configure({ mode: 'serial' })
@@ -39,10 +39,11 @@ test('onboarding downloads the search model, then adds a folder', async () => {
   await dialog.getByRole('button', { name: 'Download' }).click()
 
   await expect(page.getByText('● Ready').first()).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Skip — use keyword search for now' })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Skip for now' })).toBeHidden()
   await expectAccessible(page, 'onboarding: local AI ready')
   await page.getByRole('button', { name: 'Continue' }).click()
-  await page.getByRole('button', { name: '+ Add folder…' }).click()
+  await page.getByRole('button', { name: CHOOSE_FOLDER }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Start searching' }).click()
   await expectAccessible(page, 'search: empty')
 

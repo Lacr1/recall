@@ -17,6 +17,13 @@ export function shortFolder(fullPath: string, keep = 2): string {
   return '…\\' + parts.slice(-keep).join('\\')
 }
 
+/** "C:\Users\maya\OneDrive\Documents" -> "…\OneDrive\Documents" */
+export function shortDir(dirPath: string, keep = 2): string {
+  const parts = dirPath.replace(/\\+$/, '').split('\\')
+  if (parts.length <= keep + 1) return parts.join('\\')
+  return '…\\' + parts.slice(-keep).join('\\')
+}
+
 export function plural(n: number, word: string): string {
   return `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`
 }

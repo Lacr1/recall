@@ -1,4 +1,13 @@
-import type { AppStatus, DocumentView, EngineEvent, FailureItem, FolderInfo, SearchResponse } from '../shared/types'
+import type {
+  AppStatus,
+  DocumentView,
+  EngineEvent,
+  FailureItem,
+  FolderInfo,
+  FolderSuggestion,
+  SearchResponse,
+  SuggestedFolderId
+} from '../shared/types'
 
 export type ActionResult = { ok: true } | { ok: false; code: string; message: string }
 
@@ -9,6 +18,8 @@ export interface RecallApi {
   getDocument(fileId: number): Promise<DocumentView | null>
   listFailures(): Promise<FailureItem[]>
   addFolder(): Promise<{ folder?: FolderInfo; error?: string; cancelled?: boolean }>
+  getFolderSuggestions(): Promise<FolderSuggestion[]>
+  addSuggestedFolder(id: SuggestedFolderId): Promise<{ folder?: FolderInfo; error?: string }>
   removeFolder(folderId: number): Promise<void>
   rescanFolder(folderId: number): Promise<void>
   retryFailed(): Promise<number>

@@ -103,6 +103,9 @@ export async function waitForIndexed(page: Page): Promise<AppStatus> {
  * Moves focus with Tab until the focused element's text or accessible label matches `name`, proving it is
  * reachable by keyboard. Fails after 40 presses.
  */
+/** The folder-picker button; its label depends on whether suggested folders exist on this machine. */
+export const CHOOSE_FOLDER = /^Choose (another|a) folder/
+
 export async function tabTo(page: Page, name: string | RegExp): Promise<void> {
   for (let i = 0; i < 40; i++) {
     await page.keyboard.press('Tab')
@@ -118,6 +121,10 @@ export async function tabTo(page: Page, name: string | RegExp): Promise<void> {
 /** axe-core scan of the current screen; serious and critical violations fail the test (plan doc 07 §9). */
 export async function expectAccessible(page: Page, screen: string): Promise<void> {
   if (!(await page.evaluate(() => 'axe' in window))) await page.evaluate(AXE_SOURCE)
+  // Fade-ins would make axe measure half-transparent text as low contrast; looping animations never settle.
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity)
+  )
   const violations = await page.evaluate(async () => {
     const axe = (window as unknown as { axe: { run(ctx: Document, opts: object): Promise<{ violations: AxeViolation[] }> } }).axe
     const res = await axe.run(document, { resultTypes: ['violations'] })

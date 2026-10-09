@@ -12,6 +12,15 @@ export interface AiStatus {
   error?: string
 }
 
+/** Well-known Windows folders offered as one-click picks; main resolves the id to a path. */
+export type SuggestedFolderId = 'documents' | 'desktop' | 'downloads'
+
+export interface FolderSuggestion {
+  id: SuggestedFolderId
+  label: string
+  path: string
+}
+
 export interface FolderInfo {
   id: number
   path: string

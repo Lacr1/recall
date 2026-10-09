@@ -19,7 +19,7 @@ A **quiet productivity tool** in the family of Spotlight/Raycast (instant search
 |---|---|
 | Layout | Narrow left rail (icons + labels) · central results list · right evidence pane (resizable, collapsible). Native Windows title bar in MVP. |
 | Typography | System UI font (`Segoe UI Variable` on Windows 11, falls back to `Segoe UI`). Body 14 px, evidence passages 15 px with 1.55 line height for readability. Monospace (`Cascadia Mono`, fallback `Consolas`) for paths and code passages. |
-| Colour | Neutral greys; single accent (deep teal) for focus and primary actions; highlight marks use a soft amber background with dark text (≥ 4.5:1 contrast). Follows the system light/dark theme. |
+| Colour | Neutral greys; navy `#1F3A68` for primary actions, the active nav item, the brand tile, links and focus rings (white text on navy), and light blue `#99C2FF` for soft fills and progress bars; dark mode flips to `#99C2FF` fills with navy text; highlight marks use a soft amber background with dark text (≥ 4.5:1 contrast). Follows the system light/dark theme. |
 | Density | Comfortable by default; result cards ~88 px tall; evidence pane uses full height. |
 | Iconography | File-type icons (PDF, DOCX, MD, code, image) + simple line icons. No AI/sparkle iconography. |
 | Motion | ≤ 150 ms fades; honours `prefers-reduced-motion`. |
