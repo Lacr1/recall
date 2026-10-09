@@ -11,6 +11,7 @@ import { searchSuggestions } from './suggestions'
 import { toUnitVec, VectorIndex } from './vectors'
 import { runAsk } from './ask'
 import { readDocument } from './documents'
+import { foldersOf, matchFolders } from './folder-match'
 import { isSafeLocalPath, pathKey } from './paths'
 import { markCheckNextStart, markCleanShutdown, readFolderList, writeFolderList } from './index-files'
 import { isCorruption } from './recovery'
@@ -178,6 +179,25 @@ function getSearchSuggestions(): string[] {
   return suggestionCache.queries
 }
 
+/** For voice (plan 12 S8-07): the same search, but it never supersedes the window's own search-as-you-type. */
+async function voiceSearch(params: { query: string }) {
+  const q = String(params.query ?? '').slice(0, 500)
+  const vec = await embedQuery(q)
+  const { results, lowConfidence } = searchService.search(q, vec)
+  const p = indexer.progress()
+  return {
+    lowConfidence,
+    files: results.slice(0, 5).map((r) => ({ fileId: r.primary.fileId, name: r.primary.name, path: r.primary.path, folderPath: r.primary.folderPath, ext: r.primary.ext })),
+    partialIndex: p.filesPending > 0 || p.readDone < p.readTotal || p.scanning
+  }
+}
+
+/** Folders whose names match a spoken folder request (plan 12 D-20). Only folders holding indexed files. */
+function findFolders(params: { query: string }) {
+  const rows = db.prepare('SELECT f.path root, x.rel_path rel FROM files x JOIN folders f ON f.id = x.folder_id').all() as { root: string; rel: string }[]
+  return matchFolders(String(params.query ?? '').slice(0, 200), foldersOf(rows))
+}
+
 const asks = new Map<number, AbortController>()
 
 async function ask(params: { askId: number; question: string }): Promise<void> {
@@ -210,6 +230,8 @@ type Handler = (params: any) => unknown // eslint-disable-line @typescript-eslin
 const handlers: Record<string, Handler> = {
   getStatus,
   search,
+  voiceSearch,
+  findFolders,
   getSearchSuggestions,
   ask: (p) => {
     void ask(p)

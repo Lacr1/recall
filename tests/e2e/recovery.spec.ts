@@ -36,6 +36,9 @@ test('the engine is killed three times while indexing: it restarts and the index
   await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: CHOOSE_FOLDER }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
+  // Voice step: left off.
+  await expect(page.getByRole('heading', { name: 'Talk to Recall' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Start searching' }).click()
 
   for (const delay of [150, 400, 700]) {

@@ -6,3 +6,14 @@ dist/
 eval-results/
 tests/.tmp/
 *.tsbuildinfo
+# Spike downloads and generated audio (see spikes/s8-01-voice/README.md to recreate)
+spikes/*/models/
+spikes/*/audio/
+spikes/**/dist/
+spikes/**/.keywords-*.txt
+spikes/**/.fake-mic.wav
+spikes/**/.shown
+# Voice model files: recreate with `node scripts/fetch-voice-models.mjs`
+resources/voice/kws/
+resources/voice/asr/
+resources/voice/silero_vad.onnx

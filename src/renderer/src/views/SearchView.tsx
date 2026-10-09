@@ -16,7 +16,16 @@ let requestCounter = 0
 // Kept across visits to the search screen so the examples don't flash back to the generic ones.
 let lastSuggestions: string[] = []
 
-export function SearchView({ status, onNavigate }: { status: AppStatus; onNavigate: (v: View) => void }) {
+export function SearchView({
+  status,
+  onNavigate,
+  initialQuery
+}: {
+  status: AppStatus
+  onNavigate: (v: View) => void
+  /** Filled in by "Open in Recall" from the voice popup. */
+  initialQuery?: { text: string; n: number }
+}) {
   const [query, setQuery] = useState('')
   const [response, setResponse] = useState<SearchResponse>()
   const [loading, setLoading] = useState(false)
@@ -46,6 +55,10 @@ export function SearchView({ status, onNavigate }: { status: AppStatus; onNaviga
       if (id === requestCounter) setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (initialQuery) setQuery(initialQuery.text)
+  }, [initialQuery?.n])
 
   // Debounced search-as-you-type.
   useEffect(() => {

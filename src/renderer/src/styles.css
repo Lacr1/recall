@@ -1,63 +1,3 @@
-:root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-2: #f0f0ed;
-  --border: #e2e2dd;
-  --text: #1d1f21;
-  --text-2: #5d6166;
-  --accent: #1f3a68;
-  --accent-hover: #2a4c85;
-  --on-accent: #ffffff;
-  --accent-2: #99c2ff;
-  --accent-2-soft: #e3eeff;
-  --accent-2-text: #1f3a68;
-  --brand-ink: #99c2ff;
-  --progress-fill: #99c2ff;
-  --mark-bg: #fde7a6;
-  --mark-text: #2b2100;
-  --mark-current: #f6b93b;
-  --warn-bg: #fff4e0;
-  --warn-text: #7a4a00;
-  --info-bg: #e3eeff;
-  --info-text: #1d4f86;
-  --danger: #b42318;
-  --ok: #2e7d32;
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.05);
-  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #151617;
-    --surface: #1d1f20;
-    --surface-2: #26292b;
-    --border: #33373a;
-    --text: #e8e9ea;
-    --text-2: #a3a8ad;
-    --accent: #99c2ff;
-    --accent-hover: #b5d3ff;
-    --on-accent: #10213d;
-    --accent-2-soft: #1e2b3f;
-    --accent-2-text: #99c2ff;
-    --brand-ink: #1f3a68;
-    --progress-fill: #2a4c85;
-    --mark-bg: #5c4a12;
-    --mark-text: #fff4cf;
-    --mark-current: #a07b10;
-    --warn-bg: #3a2c12;
-    --warn-text: #f5d08a;
-    --info-bg: #1e2b3f;
-    --info-text: #a9cbf2;
-    --danger: #f2877d;
-    --ok: #7bc47f;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    color-scheme: dark;
-  }
-}
-
 * {
   box-sizing: border-box;
 }
@@ -138,26 +78,111 @@ mark.current {
   font-size: 13px;
 }
 
-/* ---------- logo & splash ---------- */
+/* ---------- window and title bar ---------- */
 
-.logo {
-  flex-shrink: 0;
+/* The window has no Windows frame: the title bar below is Recall's own. */
+.window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.logo-tile {
-  fill: var(--accent);
+.window-body {
+  flex: 1;
+  min-height: 0;
 }
 
-.logo-folder {
-  fill: var(--brand-ink);
+.titlebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding-left: 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  -webkit-app-region: drag;
 }
 
-.logo-lens {
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titlebar-name {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.titlebar-controls {
+  display: flex;
+  align-self: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 46px;
+  border: none;
+  background: none;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+
+.titlebar-btn svg {
+  width: 10px;
+  height: 10px;
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-linecap: round;
+  stroke: currentColor;
+  stroke-width: 1;
 }
+
+.titlebar-btn:hover {
+  background: var(--surface-2);
+}
+
+.titlebar-btn:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Windows' own close-button red. */
+.titlebar-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* Onboarding: the window is just the setup card, and the title bar is its brand row. */
+.window-compact {
+  background: var(--surface);
+}
+
+.titlebar-compact {
+  height: 52px;
+  padding-left: 24px;
+  border-bottom: none;
+}
+
+.titlebar-compact .titlebar-brand {
+  gap: 10px;
+}
+
+.titlebar-compact .titlebar-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.titlebar-compact .titlebar-controls {
+  align-self: flex-start;
+  height: 36px;
+}
+
+/* ---------- splash ---------- */
 
 .splash {
   display: grid;
@@ -870,55 +895,6 @@ span.status-item {
   margin-bottom: 8px;
 }
 
-.file-badge {
-  font: 600 10px var(--font);
-  letter-spacing: 0.03em;
-  border-radius: 4px;
-  padding: 2px 5px;
-  min-width: 34px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.tone-pdf {
-  background: #fde8e6;
-  color: #a1281d;
-}
-
-.tone-doc {
-  background: #e3ecfb;
-  color: #1f4f9e;
-}
-
-.tone-text {
-  background: #ececea;
-  color: #4b4f53;
-}
-
-.tone-code {
-  background: #e9e4f7;
-  color: #563c9c;
-}
-
-@media (prefers-color-scheme: dark) {
-  .tone-pdf {
-    background: #4a2421;
-    color: #f5b5ae;
-  }
-  .tone-doc {
-    background: #1f3150;
-    color: #a9c4f2;
-  }
-  .tone-text {
-    background: #33373a;
-    color: #c9cdd1;
-  }
-  .tone-code {
-    background: #33294d;
-    color: #c8b8f2;
-  }
-}
-
 /* ---------- evidence ---------- */
 
 .evidence {
@@ -1295,23 +1271,18 @@ span.status-item {
 
 /* ---------- onboarding ---------- */
 
+/* The window itself is the card (window-compact). The stepper stays at the top and the step's buttons at the
+   bottom, whatever the step's height; a step taller than the window scrolls. */
 .onboarding {
   height: 100%;
-  display: flex;
-  padding: 24px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .onboarding-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  padding: 28px 36px 32px;
-  width: min(820px, 100%);
-  /* Pinned near the top so the stepper stays put as step heights change; still scrolls when taller than the window. */
-  margin: 6vh auto auto;
-  animation: rise 0.35s ease-out both;
+  flex: 1 0 auto;
+  padding: 4px 36px 28px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1326,6 +1297,7 @@ span.status-item {
 }
 
 .onboarding-step {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1558,7 +1530,9 @@ span.status-item {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-top: 6px;
+  /* Pinned to the bottom of the card. */
+  margin-top: auto;
+  padding-top: 6px;
 }
 
 /* ---------- stepper ---------- */
@@ -1569,7 +1543,7 @@ span.status-item {
   padding: 0 0 18px;
   border-bottom: 1px solid var(--border);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 10px;
 }
 
@@ -1755,4 +1729,147 @@ button.step-body:hover .step-label {
   color: var(--text-2);
   font-size: 13px;
   margin-bottom: 8px;
+}
+
+/* ---------- voice (onboarding step 4, Settings → Voice) ---------- */
+
+.voice-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.voice-switch {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.voice-switch-label {
+  font-weight: 600;
+  margin-right: 14px;
+}
+
+.voice-switch .seg {
+  position: relative;
+  padding: 6px 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.voice-switch .seg:first-of-type {
+  border-radius: 8px 0 0 8px;
+}
+
+.voice-switch .seg:last-of-type {
+  border-radius: 0 8px 8px 0;
+  border-left: 0;
+}
+
+.voice-switch .seg.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* The real radio covers its label invisibly, so clicks and keyboard both reach it. */
+.voice-switch .seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.voice-switch .seg:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.voice-privacy {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.voice-practice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--accent-2-soft);
+  color: var(--accent-2-text);
+  font-weight: 600;
+  min-height: 44px;
+}
+
+.voice-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+}
+
+.voice-meter span {
+  width: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+  transition: opacity 80ms;
+}
+
+.voice-meter span.on {
+  opacity: 1;
+}
+
+.voice-heard {
+  margin-left: auto;
+  color: var(--ok-text);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.voice-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.voice-select select {
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+@media (forced-colors: active) {
+  .voice-switch .seg.selected {
+    outline: 2px solid Highlight;
+  }
+  .voice-meter span.on {
+    background: Highlight;
+  }
+}
+
+.tips-voice {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
 }
