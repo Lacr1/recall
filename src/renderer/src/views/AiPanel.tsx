@@ -56,10 +56,10 @@ export function AiPanel({ status }: { status: AppStatus }) {
       <div className="ai-row">
         <div>
           <div className="ai-row-title">Search model</div>
-          <div className="ai-row-sub">{ai.embedModel} — lets Recall search by meaning</div>
+          <div className="ai-row-sub">{ai.embedModel} · lets Recall search by meaning</div>
         </div>
         <div className={`ai-state ${modelReady ? 'ok' : 'warn'}`}>
-          {modelReady ? '● Ready' : ai.state === 'pulling' ? `Downloading${pct !== undefined ? ` ${pct}%` : '…'}` : ai.state === 'model_missing' ? '○ Not downloaded' : '—'}
+          {modelReady ? '● Ready' : ai.state === 'pulling' ? `Downloading${pct !== undefined ? ` ${pct}%` : '…'}` : ai.state === 'model_missing' ? '○ Not downloaded' : '○ Needs Ollama'}
         </div>
         <div className="ai-actions">
           {ai.state === 'model_missing' && (
@@ -74,7 +74,7 @@ export function AiPanel({ status }: { status: AppStatus }) {
           <div className="progress-fill" style={{ width: `${pct ?? 0}%` }} />
           <span className="progress-text">
             {ai.pull.status}
-            {ai.pull.total > 0 && ` — ${formatBytes(ai.pull.completed)} of ${formatBytes(ai.pull.total)}`}
+            {ai.pull.total > 0 && ` · ${formatBytes(ai.pull.completed)} of ${formatBytes(ai.pull.total)}`}
           </span>
         </div>
       )}
@@ -82,7 +82,7 @@ export function AiPanel({ status }: { status: AppStatus }) {
       <div className="ai-row">
         <div>
           <div className="ai-row-title">Answer model (optional)</div>
-          <div className="ai-row-sub">{ai.chatModel} — used by Ask your files</div>
+          <div className="ai-row-sub">{ai.chatModel} · used by Ask your files</div>
         </div>
         <div className={`ai-state ${ai.chatAvailable ? 'ok' : 'muted'}`}>{ai.chatAvailable ? '● Ready' : '○ Not installed'}</div>
         <div className="ai-actions" />
