@@ -14,9 +14,9 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
   }
 
   return (
-    <div className="onboarding">
+    <main className="onboarding">
       <div className="onboarding-card">
-        <div className="stepper" aria-label={`Step ${step} of 3`}>
+        <div className="stepper" role="img" aria-label={`Step ${step} of 3`}>
           {[1, 2, 3].map((n) => (
             <span key={n} className={`step-dot ${n <= step ? 'on' : ''}`} />
           ))}
@@ -84,6 +84,6 @@ export function Onboarding({ status, onDone }: { status: AppStatus; onDone: () =
           </>
         )}
       </div>
-    </div>
+    </main>
   )
 }

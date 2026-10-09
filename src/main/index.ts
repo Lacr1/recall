@@ -5,17 +5,33 @@ import { readdir, realpath, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { EngineError, EngineSupervisor } from './engine'
 import { runSmokeTest } from './smoke'
+import { installNetworkGuard } from '../engine/network-guard'
+import { removeIndexFiles } from '../engine/index-files'
 import { isInsideRoot, isSafeLocalPath, isSafeToOpen } from '../engine/paths'
 import { RENDERER_METHODS } from '../shared/constants'
+
+// Main never needs the network itself; the renderer's requests are filtered separately in hardenSession().
+installNetworkGuard('main')
+// No proxy: Recall loads only local files. Without this, Chromium's proxy auto-detection (WPAD) sends DNS
+// queries for "wpad" to the local network whenever Windows has "Automatically detect settings" on.
+app.commandLine.appendSwitch('no-proxy-server')
 
 // Index data lives in LocalAppData, not Roaming, so roaming profiles never sync it (plan doc 05 §2).
 const DATA_DIR = process.env.RECALL_DATA_DIR || path.join(process.env.LOCALAPPDATA ?? app.getPath('userData'), 'Recall', 'data')
 const OLLAMA_APP = path.join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Ollama', 'ollama app.exe')
 const DEV_URL = process.env.ELECTRON_RENDERER_URL
 
+const SMOKE_FOLDER = process.argv.find((a) => a.startsWith('--smoke-test='))?.slice('--smoke-test='.length)
+
+// Smoke and end-to-end runs use their own Electron profile so they work while a normal Recall window is open.
+// It sits beside the data folder, not inside it, so "Delete all data" never removes a profile that is in use.
+const ISOLATED_RUN = !!SMOKE_FOLDER || process.env.RECALL_E2E === '1'
+
 let win: BrowserWindow | undefined
 
-if (!app.requestSingleInstanceLock()) {
+if (ISOLATED_RUN) app.setPath('userData', DATA_DIR + '-profile')
+
+if (!ISOLATED_RUN && !app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => {
@@ -30,7 +46,8 @@ if (!app.requestSingleInstanceLock()) {
 const engine = new EngineSupervisor(
   DATA_DIR,
   (msg) => win?.webContents.send('recall:event', msg),
-  () => win?.webContents.send('recall:event', { event: 'engineRestarted' })
+  () => win?.webContents.send('recall:event', { event: 'engineRestarted' }),
+  () => win?.webContents.send('recall:event', { event: 'engineStopped' })
 )
 
 function main(): void {
@@ -38,9 +55,8 @@ function main(): void {
   engine.start()
   registerIpc()
   createWindow()
-  const smokeFolder = process.argv.find((a) => a.startsWith('--smoke-test='))?.slice('--smoke-test='.length)
-  if (smokeFolder) {
-    void runSmokeTest(smokeFolder, engine, win).then(async (code) => {
+  if (SMOKE_FOLDER) {
+    void runSmokeTest(SMOKE_FOLDER, engine, win).then(async (code) => {
       await engine.stop()
       app.exit(code)
     })
@@ -146,7 +162,23 @@ function registerIpc(): void {
   handle('deleteAllData', async () => {
     await engine.stop()
     await rm(DATA_DIR, { recursive: true, force: true })
+    await session.defaultSession.clearStorageData()
     engine.start()
+    // Reloaded from here: a renderer-initiated reload is cancelled by the will-navigate block.
+    setImmediate(() => win?.webContents.reload())
+  })
+
+  // The index is derived data: rebuilding deletes it but keeps the folder list, so the new index re-reads the same folders.
+  handle('rebuildIndex', async () => {
+    await engine.stop()
+    removeIndexFiles(DATA_DIR)
+    engine.start()
+    setImmediate(() => win?.webContents.reload())
+  })
+
+  handle('restartEngine', () => {
+    engine.restart()
+    setImmediate(() => win?.webContents.reload())
   })
 
   handle('getDataInfo', async () => ({ path: DATA_DIR, bytes: await dirSize(DATA_DIR) }))

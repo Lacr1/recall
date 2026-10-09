@@ -7,6 +7,7 @@ import { AskView } from './views/AskView'
 import { FoldersView } from './views/FoldersView'
 import { SettingsView } from './views/SettingsView'
 import { StatusBar } from './views/StatusBar'
+import { EngineStoppedScreen, IndexProblemScreen } from './views/RecoveryScreen'
 
 export type View = 'search' | 'ask' | 'folders' | 'settings'
 
@@ -27,6 +28,8 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>()
   const [askListeners] = useState(() => new Set<(e: AskEvent) => void>())
   const [engineNotice, setEngineNotice] = useState(false)
+  const [engineStopped, setEngineStopped] = useState(false)
+  const [rebuiltDismissed, setRebuiltDismissed] = useState(false)
 
   useEffect(() => {
     const off = window.recall.onEvent((msg) => {
@@ -34,8 +37,9 @@ export function App() {
       else if (msg.event === 'ask') askListeners.forEach((l) => l(msg.data))
       else if (msg.event === 'engineRestarted') {
         setEngineNotice(true)
+        setEngineStopped(false)
         void window.recall.getStatus().then(setStatus)
-      }
+      } else if (msg.event === 'engineStopped') setEngineStopped(true)
     })
     const load = () => window.recall.getStatus().then(setStatus).catch(() => setTimeout(load, 500))
     load()
@@ -53,7 +57,8 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  if (!status) return <div className="splash">Starting Recall…</div>
+  if (!status) return engineStopped ? <EngineStoppedScreen /> : <div className="splash">Starting Recall…</div>
+  if (status.problem) return <IndexProblemScreen problem={status.problem} />
 
   const finishOnboarding = () => {
     try {
@@ -99,9 +104,21 @@ export function App() {
         ))}
       </nav>
       <main className="content">
+        {engineStopped && (
+          <div className="banner banner-warn" role="alert">
+            Recall’s indexer stopped after several problems in a row. Search and indexing are unavailable.
+            <button className="link" onClick={() => void window.recall.restartEngine()}>Restart indexer</button>
+          </div>
+        )}
+        {status.rebuilt && !rebuiltDismissed && (
+          <div className="banner banner-info" role="status">
+            Recall rebuilt its index from your folders. Results fill in as it reads your files again.
+            <button className="link" onClick={() => setRebuiltDismissed(true)}>Dismiss</button>
+          </div>
+        )}
         {engineNotice && (
           <div className="banner banner-info" role="status">
-            Recall's indexer restarted after a problem. No data was lost.
+            Recall’s indexer restarted after a problem. No data was lost.
             <button className="link" onClick={() => setEngineNotice(false)}>Dismiss</button>
           </div>
         )}

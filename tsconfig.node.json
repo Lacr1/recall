@@ -15,5 +15,5 @@
     "isolatedModules": true
   },
   "include": ["electron.vite.config.ts", "vitest*.config.ts", "src/main/**/*", "src/preload/**/*", "src/engine/**/*", "src/shared/**/*", "tests/**/*"],
-  "exclude": ["tests/fixtures/**", "tests/.tmp/**"]
+  "exclude": ["tests/fixtures/**", "tests/.tmp/**", "tests/e2e/**", "tests/audit/**"]
 }

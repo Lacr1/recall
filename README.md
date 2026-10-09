@@ -28,8 +28,14 @@ Index data lives in `%LOCALAPPDATA%\Recall\data` (override with `RECALL_DATA_DIR
 ## Test
 
 ```
-npm test             # 25 unit + integration tests, no model or network needed
+npm test             # 45 unit + integration tests incl. a 20-kill crash loop; no model or network needed
+                     # (CRASH_SEED=<n> npm test picks other kill points)
 npm run test:live    # needs Ollama: retrieval eval (writes eval-results/latest.md) + Ask checks
+npm run test:e2e     # builds, then drives the real app with a fake Ollama: 14 flows + accessibility scans
+                     # (RECALL_E2E_EXE=dist/win-unpacked/Recall.exe npx playwright test runs them on the packaged app)
+npm run audit:network  # needs Ollama: full app flow, fails if anything connects outside this computer
+                       # (RECALL_AUDIT_EXE=dist/win-unpacked/Recall.exe audits the packaged app)
+npm run bench        # vector search speed/memory at 10k-200k chunks (eval-results/bench-vectors.md)
 npm run typecheck
 npm run fixtures     # regenerate the synthetic corpus in tests/fixtures/corpus
 ```
@@ -42,7 +48,7 @@ electron . --smoke-test=<folder> [--smoke-screenshots=<dir>]
 
 ## Demo script (≈ 3 minutes)
 
-1. Start Ollama. Launch Recall. On first run, onboarding shows the privacy promise, then the local-AI check, then folder selection. Add `tests/fixtures/corpus` (a synthetic set of a freelancer's files) or a real folder.
+1. Start Ollama. Launch Recall. On first run, onboarding shows the privacy promise, then the local-AI check, then folder selection. Add `tests/fixtures/corpus` (a synthetic set of a freelancer's files) or a real folder that does not sync to OneDrive.
 2. Watch **Reading files** then **Understanding** progress. Searching works immediately.
 3. Search `proposal with a 50% initial payment` → `Acme_Proposal_v2.pdf` on page 2, with the passage highlighted and *why it matched*.
 4. Search `emails landing in junk folder` → the retro note says "go to spam"; it matches by meaning, with no shared keywords.
