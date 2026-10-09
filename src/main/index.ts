@@ -1,6 +1,6 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, screen, session, shell, type IpcMainInvokeEvent } from 'electron'
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { readdir, realpath, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { EngineError, EngineSupervisor } from './engine'
@@ -8,6 +8,7 @@ import { runSmokeTest } from './smoke'
 import { allowPermissionCheck, allowPermissionRequest } from './permissions'
 import { VoiceController } from './voice/controller'
 import { voiceSettingsPatch } from './voice/settings'
+import { APP_MIN_SIZE, applyWindowMode, fitSize, parseWindowAction, parseWindowMode, startsInOnboarding, WINDOW_SIZE, type WindowMode } from './window-frame'
 import { runVoiceSmoke } from './voice/smoke'
 import { installNetworkGuard } from '../engine/network-guard'
 import { removeIndexFiles } from '../engine/index-files'
@@ -47,6 +48,7 @@ if (process.env.RECALL_E2E === '1' && process.env.RECALL_FAKE_MIC) {
 const SUGGESTED_FOLDERS: Record<SuggestedFolderId, string> = { documents: 'Documents', desktop: 'Desktop', downloads: 'Downloads' }
 
 let win: BrowserWindow | undefined
+let windowMode: WindowMode = 'app'
 // Set when the user really quits (tray menu), so closing the window no longer just hides it.
 let quitting = false
 
@@ -153,11 +155,23 @@ async function shutdown(): Promise<void> {
 }
 
 function createWindow(): void {
+  let foldersJson: string | undefined
+  try {
+    foldersJson = readFileSync(path.join(DATA_DIR, 'folders.json'), 'utf8')
+  } catch {
+    // No folder list yet: first run.
+  }
+  windowMode = startsInOnboarding(foldersJson) ? 'onboarding' : 'app'
+  const onboarding = windowMode === 'onboarding'
+  const size = fitSize(WINDOW_SIZE[windowMode], screen.getPrimaryDisplay().workArea)
   win = new BrowserWindow({
-    width: 1280,
-    height: 820,
-    minWidth: 900,
-    minHeight: 600,
+    ...size,
+    minWidth: onboarding ? size.width : APP_MIN_SIZE.width,
+    minHeight: onboarding ? size.height : APP_MIN_SIZE.height,
+    resizable: !onboarding,
+    maximizable: !onboarding,
+    // Recall draws its own title bar (TitleBar); Windows keeps the shadow, resize edges and snapping.
+    frame: false,
     show: false,
     title: 'Recall',
     // Matches --bg so the splash appears without a light flash in dark mode.
@@ -183,6 +197,9 @@ function createWindow(): void {
     }
   })
   win.webContents.on('did-finish-load', () => voice.rendererLoaded())
+  // The title bar shows Maximize or Restore.
+  win.on('maximize', () => win?.webContents.send('recall:event', { event: 'window', maximized: true }))
+  win.on('unmaximize', () => win?.webContents.send('recall:event', { event: 'window', maximized: false }))
   // The main window only really closes when Recall quits (otherwise it hides), and the voice popup must not keep
   // the app alive behind it.
   win.on('closed', () => {
@@ -304,6 +321,24 @@ function registerIpc(): void {
   handle('openMicSettings', () => shell.openExternal('ms-settings:privacy-microphone'))
 
   handle('getDataInfo', async () => ({ path: DATA_DIR, bytes: await dirSize(DATA_DIR) }))
+
+  // The custom title bar (the window has no Windows frame).
+  handle('setWindowMode', (p) => {
+    const mode = parseWindowMode(p.mode)
+    if (!mode || !win || mode === windowMode) return
+    windowMode = mode
+    applyWindowMode(win, mode)
+  })
+  handle('windowControl', (p) => {
+    const action = parseWindowAction(p.action)
+    if (!win || !action) return
+    if (action === 'minimize') win.minimize()
+    else if (action === 'close') win.close()
+    else if (win.isMaximizable()) {
+      if (win.isMaximized()) win.unmaximize()
+      else win.maximize()
+    }
+  })
 
   const addFolderPath = async (folderPath: string) => {
     try {

@@ -78,6 +78,110 @@ mark.current {
   font-size: 13px;
 }
 
+/* ---------- window and title bar ---------- */
+
+/* The window has no Windows frame: the title bar below is Recall's own. */
+.window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.window-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.titlebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding-left: 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titlebar-name {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.titlebar-controls {
+  display: flex;
+  align-self: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 46px;
+  border: none;
+  background: none;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+
+.titlebar-btn svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.titlebar-btn:hover {
+  background: var(--surface-2);
+}
+
+.titlebar-btn:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Windows' own close-button red. */
+.titlebar-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* Onboarding: the window is just the setup card, and the title bar is its brand row. */
+.window-compact {
+  background: var(--surface);
+}
+
+.titlebar-compact {
+  height: 52px;
+  padding-left: 24px;
+  border-bottom: none;
+}
+
+.titlebar-compact .titlebar-brand {
+  gap: 10px;
+}
+
+.titlebar-compact .titlebar-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.titlebar-compact .titlebar-controls {
+  align-self: flex-start;
+  height: 36px;
+}
+
 /* ---------- splash ---------- */
 
 .splash {
@@ -1167,23 +1271,18 @@ span.status-item {
 
 /* ---------- onboarding ---------- */
 
+/* The window itself is the card (window-compact). The stepper stays at the top and the step's buttons at the
+   bottom, whatever the step's height; a step taller than the window scrolls. */
 .onboarding {
   height: 100%;
-  display: flex;
-  padding: 24px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .onboarding-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  padding: 28px 36px 32px;
-  width: min(820px, 100%);
-  /* Pinned near the top so the stepper stays put as step heights change; still scrolls when taller than the window. */
-  margin: 6vh auto auto;
-  animation: rise 0.35s ease-out both;
+  flex: 1 0 auto;
+  padding: 4px 36px 28px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1198,6 +1297,7 @@ span.status-item {
 }
 
 .onboarding-step {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1430,7 +1530,9 @@ span.status-item {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-top: 6px;
+  /* Pinned to the bottom of the card. */
+  margin-top: auto;
+  padding-top: 6px;
 }
 
 /* ---------- stepper ---------- */

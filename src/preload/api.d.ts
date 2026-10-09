@@ -46,6 +46,10 @@ export interface RecallApi {
   /** Reports whether the microphone opened; called by the capture module. */
   voiceCapture(result: { ok: true } | { code: MicProblemCode }): Promise<void>
   openMicSettings(): Promise<void>
+  /** Onboarding shows the window as just the setup card; the app is the normal resizable window. */
+  setWindowMode(mode: 'onboarding' | 'app'): Promise<void>
+  /** The custom title bar's buttons (the window has no Windows frame). */
+  windowControl(action: 'minimize' | 'maximize' | 'close'): Promise<void>
   onEvent(listener: (e: EngineEvent) => void): () => void
 }
 

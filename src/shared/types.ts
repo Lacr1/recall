@@ -155,3 +155,5 @@ export type EngineEvent =
   | { event: 'voiceLevel'; rms: number }
   /** The popup's Open in Recall / Open Settings: show this view, with the spoken request filled in. */
   | { event: 'voiceOpen'; view: 'search' | 'ask' | 'settings'; text: string }
+  /** The window was maximized or restored, for the title bar's button. */
+  | { event: 'window'; maximized: boolean }

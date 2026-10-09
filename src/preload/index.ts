@@ -33,6 +33,8 @@ const api: RecallApi = {
   setVoiceMeter: (on) => call('setVoiceMeter', { on }),
   voiceCapture: (result) => call('voiceCapture', result),
   openMicSettings: () => call('openMicSettings'),
+  setWindowMode: (mode) => call('setWindowMode', { mode }),
+  windowControl: (action) => call('windowControl', { action }),
   onEvent: (listener) => {
     const handler = (_e: Electron.IpcRendererEvent, msg: Parameters<typeof listener>[0]) => listener(msg)
     ipcRenderer.on('recall:event', handler)
