@@ -1,4 +1,7 @@
-/* Voice popup (plan 12 §5.1): a 400 px card in a transparent window; the 12 px margin leaves room for its shadow. */
+/*
+ * Voice popup (plan 12 §5.1): the summoned panda and a 400 px card beside it, in a transparent window;
+ * the 12 px margin leaves room for the shadow and the summon sparks.
+ */
 
 html,
 body,
@@ -20,6 +23,41 @@ body {
   box-sizing: border-box;
 }
 
+.stage {
+  display: flex;
+  align-items: flex-start;
+  width: max-content;
+}
+
+/* The bubble carries the pop and the tail; the card inside it scrolls, which would clip them. */
+.bubble {
+  position: relative;
+  /* Springs out of the panda once it has landed; the overshoot stays inside the 12 px window margin. */
+  transform-origin: 0 24px;
+  animation: pop-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 460ms both;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.6);
+  }
+}
+
+/* Speech-bubble tail pointing at the panda; drawn over the card's left border so the two read as one. */
+.bubble::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 18px;
+  width: 11px;
+  height: 11px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+
 .card {
   width: 400px;
   max-height: 480px;
@@ -31,14 +69,6 @@ body {
     0 1px 2px rgba(0, 0, 0, 0.08),
     0 8px 24px rgba(16, 33, 61, 0.16);
   padding: 12px 16px 14px;
-  animation: pop-in 120ms ease-out;
-}
-
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
 }
 
 .body {
@@ -63,6 +93,217 @@ body {
 .brand {
   font-weight: 600;
   font-size: 13px;
+}
+
+/* ---------- summon: the panda pops in with a puff and pixel sparks, before the card ---------- */
+
+/* 48 px panda + 12 px gap = POPUP_MASCOT_WIDTH in shared/popup.ts. */
+.mascot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/*
+ * Timeline: ring and flash at 0 ms, smoke from 60 ms, panda jumps out at 120 ms and lands around 500 ms,
+ * the card follows at 460 ms, and the panda starts floating at 800 ms.
+ */
+
+.summon-panda {
+  position: relative;
+  transform-origin: 50% 100%;
+  animation:
+    summon 620ms ease-out 120ms both,
+    float 2.6s ease-in-out 800ms infinite;
+}
+
+/* Stretches as it jumps out of the smoke, squashes on landing, then settles. */
+@keyframes summon {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.2);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-10px) scale(0.88, 1.18);
+  }
+  60% {
+    transform: translateY(0) scale(1.14, 0.86);
+  }
+  80% {
+    transform: translateY(-3px) scale(0.96, 1.05);
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.panda-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -3px;
+  width: 34px;
+  height: 7px;
+  margin-left: -17px;
+  border-radius: 50%;
+  background: rgba(16, 33, 61, 0.22);
+  animation:
+    shadow-in 620ms ease-out 120ms both,
+    shadow-float 2.6s ease-in-out 800ms infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .panda-shadow {
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+
+@keyframes shadow-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes shadow-float {
+  50% {
+    opacity: 0.7;
+    transform: scale(0.85);
+  }
+}
+
+/* The summoning circle that opens at the panda's feet. */
+.summon-ring {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 60px;
+  height: 14px;
+  margin-left: -30px;
+  border: 2px solid var(--accent-2);
+  border-radius: 50%;
+  box-shadow:
+    0 0 8px var(--accent-2),
+    inset 0 0 6px var(--accent-2);
+  opacity: 0;
+  animation: ring 760ms ease-out;
+}
+
+@keyframes ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+.summon-flash,
+.puff,
+.spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+}
+
+.summon-flash {
+  width: 48px;
+  height: 48px;
+  margin: -24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 170, 0.95) 0 30%, rgba(246, 178, 107, 0.4) 55%, transparent 70%);
+  animation: flash 280ms ease-out;
+}
+
+@keyframes flash {
+  from {
+    opacity: 1;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* Drawn over the panda, so the cloud hides it for a moment and clears to reveal it. */
+.puff {
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fffaf2, #f1d9bf);
+  box-shadow: 0 1px 3px rgba(16, 33, 61, 0.12);
+  animation: puff 520ms ease-out both;
+}
+
+@keyframes puff {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.2);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 0.4), calc(var(--y) * 0.4)) scale(1);
+  }
+  55% {
+    opacity: 0.85;
+    transform: translate(calc(var(--x) * 0.75), calc(var(--y) * 0.75)) scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) scale(0.5);
+  }
+}
+
+/* Four-point stars, so the burst matches the panda's own sparkle. */
+.spark {
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  background: #e8692a;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: spark 640ms ease-out 200ms;
+}
+
+.spark-1 {
+  background: #f6c66b;
+}
+
+.spark-2 {
+  width: 8px;
+  height: 8px;
+  margin: -4px;
+  background: var(--accent-2);
+}
+
+@keyframes spark {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(1.3);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) rotate(180deg) scale(0.3);
+  }
 }
 
 .spacer {
@@ -445,10 +686,18 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card,
+  .bubble,
   .body,
-  .chip-ok {
+  .chip-ok,
+  .summon-panda,
+  .panda-shadow {
     animation: none;
+  }
+  .summon-ring,
+  .summon-flash,
+  .puff,
+  .spark {
+    display: none;
   }
   .pill-dot,
   .caret,
@@ -458,6 +707,9 @@ kbd {
 }
 
 @media (forced-colors: active) {
+  .bubble::after {
+    display: none;
+  }
   .card,
   .hit,
   .btn,
