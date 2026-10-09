@@ -6,6 +6,7 @@ const call = (channel: string, params?: unknown) => ipcRenderer.invoke(`recall:$
 const api: RecallApi = {
   getStatus: () => call('getStatus'),
   search: (requestId, query) => call('search', { requestId, query }),
+  getSearchSuggestions: () => call('getSearchSuggestions'),
   getDocument: (fileId) => call('getDocument', { fileId }),
   listFailures: () => call('listFailures'),
   addFolder: () => call('addFolder'),

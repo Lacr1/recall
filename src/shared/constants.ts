@@ -15,6 +15,7 @@ export const MAX_PDF_BYTES = 200 * 1024 * 1024
 export const RENDERER_METHODS = [
   'getStatus',
   'search',
+  'getSearchSuggestions',
   'getDocument',
   'listFailures',
   'removeFolder',
