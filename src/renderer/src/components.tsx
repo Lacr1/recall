@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { HighlightRange } from '../../shared/types'
+import logoUrl from './assets/logo.png'
 
 /** Renders text with <mark> ranges. Text nodes only, never HTML from documents. */
 export function Highlighted({ text, ranges }: { text: string; ranges: HighlightRange[] }) {
@@ -47,16 +48,9 @@ export function Icon({ name }: { name: IconName }) {
   )
 }
 
-/** Recall's mark: a folder with a magnifier on the brand tile. Colours come from theme tokens via CSS. */
+/** Recall's mark: the red panda. Decorative, so screen readers skip it. */
 export function Logo({ size, className = '' }: { size: number; className?: string }) {
-  return (
-    <svg className={`logo ${className}`} viewBox="0 0 64 64" width={size} height={size} aria-hidden="true">
-      <rect className="logo-tile" width="64" height="64" rx="16" />
-      <path className="logo-folder" d="M14 22a4 4 0 0 1 4-4h9l4 4h15a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4Z" />
-      <circle className="logo-lens" cx="30" cy="31" r="6" />
-      <path className="logo-lens" d="M34.5 35.5 39 40" />
-    </svg>
-  )
+  return <img className={`logo ${className}`} src={logoUrl} width={size} height={size} alt="" draggable={false} />
 }
 
 export function ConfirmDialog(props: {

@@ -11,7 +11,6 @@
   --accent-2: #99c2ff;
   --accent-2-soft: #e3eeff;
   --accent-2-text: #1f3a68;
-  --brand-ink: #99c2ff;
   --progress-fill: #99c2ff;
   --mark-bg: #fde7a6;
   --mark-text: #2b2100;
@@ -42,7 +41,6 @@
     --on-accent: #10213d;
     --accent-2-soft: #1e2b3f;
     --accent-2-text: #99c2ff;
-    --brand-ink: #1f3a68;
     --progress-fill: #2a4c85;
     --mark-bg: #5c4a12;
     --mark-text: #fff4cf;
@@ -142,21 +140,7 @@ mark.current {
 
 .logo {
   flex-shrink: 0;
-}
-
-.logo-tile {
-  fill: var(--accent);
-}
-
-.logo-folder {
-  fill: var(--brand-ink);
-}
-
-.logo-lens {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-linecap: round;
+  user-select: none;
 }
 
 .splash {
@@ -544,6 +528,25 @@ span.status-item {
   gap: 10px;
   margin-bottom: 8px;
   text-align: center;
+}
+
+/* Six-frame sprite sheet. The resting position is frame 4 (found it), which is what
+   reduced motion shows, since the global reduced-motion rule removes the animation. */
+.home-mascot {
+  width: clamp(96px, 18vh, 150px);
+  aspect-ratio: 320 / 328;
+  background: url('./assets/mascot-search.png') 60% 0 / 600% 100% no-repeat;
+  animation: mascot-search 2.4s infinite;
+}
+
+@keyframes mascot-search {
+  0% { background-position: 0% 0; animation-timing-function: step-end; }
+  14% { background-position: 20% 0; animation-timing-function: step-end; }
+  28% { background-position: 40% 0; animation-timing-function: step-end; }
+  42% { background-position: 60% 0; animation-timing-function: step-end; }
+  56% { background-position: 80% 0; animation-timing-function: step-end; }
+  86% { background-position: 100% 0; animation-timing-function: step-end; }
+  100% { background-position: 100% 0; }
 }
 
 .home-intro h2 {
