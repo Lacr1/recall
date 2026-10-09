@@ -6,13 +6,24 @@ directories:
 files:
   - out/**
   - package.json
+  # OCR (S4-06). In Node each tesseract-core build loads its .wasm file; the .wasm.js copies (wasm embedded
+  # for browsers, ~25 MB) are left out. All builds stay: tesseract.js 7.0.0 passes a boolean where getCore
+  # expects an OEM number, so it loads the non-LSTM builds even for LSTM_ONLY. Only the integer English
+  # model is used, so the larger float model is left out too.
+  - '!node_modules/tesseract.js-core/*.wasm.js'
+  - '!node_modules/@tesseract.js-data/eng/4.0.0/**'
 # Native binaries and pdf.js (loaded via dynamic import) must live outside the asar archive.
 # The voice addon loads onnxruntime and sherpa DLLs from its own folder, so the whole package is unpacked.
+# tesseract.js starts a worker thread and loads wasm and language data from disk, so it is unpacked too.
 asarUnpack:
   - '**/*.node'
   - node_modules/better-sqlite3/**
   - node_modules/pdfjs-dist/**
   - node_modules/sherpa-onnx-win-x64/**
+  - node_modules/tesseract.js/**
+  - node_modules/tesseract.js-core/**
+  - node_modules/@tesseract.js-data/**
+  - node_modules/@napi-rs/**
 # Voice models (plan 12 D-17); added in dev by `node scripts/fetch-voice-models.mjs`.
 extraResources:
   - from: resources/voice

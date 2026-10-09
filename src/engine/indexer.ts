@@ -8,10 +8,12 @@ import { chunkDocument, embeddingText } from './chunk'
 import { ExtractError, extractFile } from './extract'
 import { embed, OllamaError } from './ollama'
 import {
-  isBlockedFolder, isExcludedDir, isExcludedFile, isInsideRoot, kindForExt, pathKey, tokenizeName, tokenizePath, type Kind
+  isBlockedFolder, isExcludedDir, isExcludedFile, isInsideRoot, kindForExt, pathKey, sizeCapFor, tokenizeName, tokenizePath,
+  type Kind
 } from './paths'
+import { activateBuilding, activeSpace, buildingSpace, noteSpaceFacts, type EmbeddingSpace } from './spaces'
 import { toUnitVec, vecToBuffer, type VectorIndex } from './vectors'
-import { DOC_PREFIX, EMBED_MODEL, MAX_FILE_BYTES, MAX_PDF_BYTES } from '../shared/constants'
+import { storeSignature } from './versions'
 import type { FailureItem, FolderInfo, IndexProgress } from '../shared/types'
 
 const ORPHAN_GRACE_MS = 10 * 60_000
@@ -23,6 +25,8 @@ export class UserError extends Error {
     super(message)
   }
 }
+
+type ChunkRow = { id: number; content_id: number; text: string; section_path: string | null; title: string | null }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const yieldLoop = () => new Promise((r) => setImmediate(r))
@@ -37,6 +41,12 @@ export class Indexer {
   private stopped = false
   private aiReady = false
   private embedBlockedUntil = 0
+  /** Contents the model being built could not embed; they end up 'failed' after the swap. */
+  private buildFailed = { spaceId: 0, contents: new Set<number>() }
+  /** Called after a model change completes and the new space serves search. */
+  onSpaceActivated: () => void = () => undefined
+  /** S4-06: images and scanned PDFs are read with OCR. Off by default. */
+  private ocr: boolean
 
   constructor(
     private readonly db: DB,
@@ -47,6 +57,29 @@ export class Indexer {
     private readonly onLaneError: (err: unknown) => void = () => undefined
   ) {
     this.paused = getSetting(db, 'paused') === '1'
+    this.ocr = getSetting(db, 'ocr') === '1'
+  }
+
+  get ocrEnabled(): boolean {
+    return this.ocr
+  }
+
+  /**
+   * Turning OCR on reads scanned PDFs again and picks up images on a rescan; turning it off drops images from
+   * the index on that rescan and stops the OCR worker. Text already read from scanned PDFs is kept.
+   */
+  setOcr(on: boolean): void {
+    if (on === this.ocr) return
+    this.ocr = on
+    setSetting(this.db, 'ocr', on ? '1' : '0')
+    if (on) {
+      this.db.prepare("UPDATE contents SET extract_status = 'pending', extract_attempts = 0 WHERE kind = 'pdf' AND extract_status = 'no_text'").run()
+    } else {
+      void import('./ocr').then((m) => m.stopOcr())
+    }
+    for (const f of this.folderRows()) this.scanQueue.add(f.id)
+    this.wake()
+    this.onChange()
   }
 
   start(): void {
@@ -58,6 +91,7 @@ export class Indexer {
     void this.hashLoop()
     void this.extractLoop()
     void this.embedLoop()
+    void this.buildLoop()
     setInterval(() => {
       for (const f of this.folderRows()) this.scanQueue.add(f.id)
       this.gc(false)
@@ -68,6 +102,11 @@ export class Indexer {
   stop(): void {
     this.stopped = true
     for (const w of this.watchers.values()) w.close()
+    this.wake()
+  }
+
+  /** Lets idle lanes look for work now, e.g. after a model change started. */
+  wakeLanes(): void {
     this.wake()
   }
 
@@ -128,6 +167,7 @@ export class Indexer {
       .prepare("UPDATE contents SET extract_status = 'pending', extract_attempts = 0 WHERE extract_status IN ('timeout','failed')")
       .run().changes
     const c = this.db.prepare("UPDATE contents SET embed_status = 'pending' WHERE embed_status = 'failed'").run().changes
+    this.buildFailed.contents.clear()
     this.wake()
     this.onChange()
     return a + b + c
@@ -176,14 +216,15 @@ export class Indexer {
       embedTotal: one(
         "SELECT count(*) n FROM contents WHERE extract_status = 'ok' AND chunk_count > 0 AND EXISTS (SELECT 1 FROM files WHERE content_id = contents.id)"
       ),
+      // Failed contents are finished too (they are listed as failures), or progress would never complete.
       embedDone: one(
-        "SELECT count(*) n FROM contents WHERE extract_status = 'ok' AND embed_status = 'done' AND EXISTS (SELECT 1 FROM files WHERE content_id = contents.id)"
+        "SELECT count(*) n FROM contents WHERE extract_status = 'ok' AND embed_status IN ('done','failed') AND EXISTS (SELECT 1 FROM files WHERE content_id = contents.id)"
       ),
       skipped: one("SELECT count(*) n FROM files WHERE status = 'skipped'"),
       failed: one(
         "SELECT count(*) n FROM files x LEFT JOIN contents c ON c.id = x.content_id WHERE x.status = 'error' OR c.extract_status NOT IN ('ok','pending')"
       ),
-      chunks: one('SELECT count(*) n FROM chunk_vectors')
+      chunks: one("SELECT count(*) n FROM chunk_vectors WHERE space_id = (SELECT id FROM embedding_spaces WHERE status = 'active')")
     }
   }
 
@@ -280,45 +321,113 @@ export class Indexer {
       return rows.length > 0
     })
 
+  // Extract and embed take documents and notes before code, so what people search for most is ready first.
   private extractLoop = () =>
     this.lane('extract', async () => {
       const row = this.db
         .prepare(
           `SELECT c.id, c.kind, c.extract_attempts, f.path || '\\' || x.rel_path abs
            FROM contents c JOIN files x ON x.content_id = c.id JOIN folders f ON f.id = x.folder_id
-           WHERE c.extract_status = 'pending' ORDER BY x.mtime_ms DESC LIMIT 1`
+           WHERE c.extract_status = 'pending' ORDER BY c.kind = 'code', x.mtime_ms DESC LIMIT 1`
         )
         .get() as { id: number; kind: Kind; extract_attempts: number; abs: string } | undefined
-      if (!row) return false
+      if (!row) return this.backfillSignatures()
       await this.extractContent(row)
       return true
     })
 
+  /** Version signatures for contents read before they existed (index format v3), from their stored chunks. */
+  private backfillSignatures(): boolean {
+    const ids = this.db
+      .prepare(
+        `SELECT c.id FROM contents c WHERE c.extract_status = 'ok' AND c.chunk_count > 0
+         AND NOT EXISTS (SELECT 1 FROM content_signatures s WHERE s.content_id = c.id) LIMIT 20`
+      )
+      .all() as { id: number }[]
+    const chunksOf = this.db.prepare('SELECT text, char_start, char_end FROM chunks WHERE content_id = ? ORDER BY ord')
+    for (const { id } of ids) {
+      // Chunks overlap; keep only the new part of each so the text matches what extraction saw.
+      let text = ''
+      let cursor = 0
+      for (const c of chunksOf.all(id) as { text: string; char_start: number; char_end: number }[]) {
+        if (c.char_end <= cursor) continue
+        text += (c.char_start > cursor ? '\n' : '') + c.text.slice(Math.max(cursor, c.char_start) - c.char_start)
+        cursor = c.char_end
+      }
+      storeSignature(this.db, id, text)
+    }
+    return ids.length > 0
+  }
+
   private embedLoop = () =>
     this.lane('embed', async () => {
       if (!this.aiReady || Date.now() < this.embedBlockedUntil) return false
+      const space = activeSpace(this.db)
       const rows = this.db
         .prepare(
           `SELECT ch.id, ch.content_id, ch.text, ch.section_path, c.title FROM chunks ch JOIN contents c ON c.id = ch.content_id
-           LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id
+           LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id AND v.space_id = ?
            WHERE c.extract_status = 'ok' AND c.embed_status = 'pending' AND v.chunk_id IS NULL
              AND EXISTS (SELECT 1 FROM files WHERE content_id = c.id)
-           ORDER BY c.id LIMIT ?`
+           ORDER BY c.kind = 'code', c.id LIMIT ?`
         )
-        .all(EMBED_BATCH) as { id: number; content_id: number; text: string; section_path: string | null; title: string | null }[]
+        .all(space.id, EMBED_BATCH) as ChunkRow[]
       if (!rows.length) {
         // Contents whose chunks are all embedded (or that have none) are done.
         const n = this.db
           .prepare(
             `UPDATE contents SET embed_status = 'done' WHERE extract_status = 'ok' AND embed_status = 'pending'
-             AND NOT EXISTS (SELECT 1 FROM chunks ch LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id WHERE ch.content_id = contents.id AND v.chunk_id IS NULL)`
+             AND NOT EXISTS (SELECT 1 FROM chunks ch LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id AND v.space_id = ?
+                             WHERE ch.content_id = contents.id AND v.chunk_id IS NULL)`
           )
-          .run().changes
+          .run(space.id).changes
         return n > 0
       }
-      await this.embedChunks(rows)
+      await this.embedChunks(rows, space, false)
       return true
     })
+
+  /**
+   * S4-07: fills a space being built for a new model, alongside the active one, then swaps it in. Search keeps
+   * using the active space until the swap; new files are embedded in both meanwhile.
+   */
+  private buildLoop = () =>
+    this.lane('rebuild', async () => {
+      if (!this.aiReady || Date.now() < this.embedBlockedUntil) return false
+      const space = buildingSpace(this.db)
+      if (!space) return false
+      if (space.id !== this.buildFailed.spaceId) this.buildFailed = { spaceId: space.id, contents: new Set() }
+      const rows = this.db
+        .prepare(
+          `SELECT ch.id, ch.content_id, ch.text, ch.section_path, c.title FROM chunks ch JOIN contents c ON c.id = ch.content_id
+           LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id AND v.space_id = ?
+           WHERE c.extract_status = 'ok' AND v.chunk_id IS NULL AND EXISTS (SELECT 1 FROM files WHERE content_id = c.id)
+             AND c.id NOT IN (SELECT value FROM json_each(?))
+           ORDER BY c.kind = 'code', c.id LIMIT ?`
+        )
+        .all(space.id, JSON.stringify([...this.buildFailed.contents]), EMBED_BATCH) as ChunkRow[]
+      if (rows.length) {
+        await this.embedChunks(rows, space, true)
+        return true
+      }
+      activateBuilding(this.db, this.buildFailed.contents)
+      this.vectors.invalidate()
+      this.onSpaceActivated()
+      return true
+    })
+
+  /** Progress of a model change: chunks with a vector in the space being built, of all chunks to embed. */
+  buildProgress(): { model: string; done: number; total: number } | undefined {
+    const space = buildingSpace(this.db)
+    if (!space) return undefined
+    const one = (sql: string, ...p: unknown[]) => (this.db.prepare(sql).get(...p) as { n: number }).n
+    const live = "c.extract_status = 'ok' AND EXISTS (SELECT 1 FROM files WHERE content_id = c.id)"
+    return {
+      model: space.model,
+      total: one(`SELECT count(*) n FROM chunks ch JOIN contents c ON c.id = ch.content_id WHERE ${live}`),
+      done: one(`SELECT count(*) n FROM chunk_vectors v JOIN chunks ch ON ch.id = v.chunk_id JOIN contents c ON c.id = ch.content_id WHERE v.space_id = ? AND ${live}`, space.id)
+    }
+  }
 
   // ---------- reconcile ----------
 
@@ -340,8 +449,10 @@ export class Indexer {
 
     const getFile = this.db.prepare('SELECT id, size, mtime_ms, status FROM files WHERE path_key = ?')
     const touch = this.db.prepare('UPDATE files SET seen_generation = ? WHERE id = ?')
+    // A skipped file drops its content link so GC removes the old chunks and vectors.
     const markChanged = this.db.prepare(
-      "UPDATE files SET size = ?, mtime_ms = ?, status = ?, skip_reason = ?, attempts = 0, error_code = NULL, seen_generation = ? WHERE id = ?"
+      `UPDATE files SET size = ?, mtime_ms = ?, status = ?, skip_reason = ?, attempts = 0, error_code = NULL, seen_generation = ?,
+       content_id = CASE WHEN ? = 'skipped' THEN NULL ELSE content_id END WHERE id = ?`
     )
     const insert = this.db.prepare(
       `INSERT INTO files(folder_id, rel_path, path_key, name, ext, name_tokens, path_tokens, size, mtime_ms, status, skip_reason, seen_generation)
@@ -371,7 +482,7 @@ export class Indexer {
         }
         if (!entry.isFile() || isExcludedFile(entry.name)) continue // symlinks/junctions are not followed
         const ext = path.extname(entry.name).slice(1).toLowerCase()
-        const kind = kindForExt(ext)
+        const kind = kindForExt(ext, { ocr: this.ocr })
         if (!kind) continue
         let s
         try {
@@ -379,9 +490,9 @@ export class Indexer {
         } catch {
           continue
         }
-        const cap = kind === 'pdf' ? MAX_PDF_BYTES : MAX_FILE_BYTES
-        const status = s.size > cap ? 'skipped' : 'pending'
-        const skip = s.size > cap ? 'too_large' : null
+        const tooLarge = s.size > sizeCapFor(kind, ext)
+        const status = tooLarge ? 'skipped' : 'pending'
+        const skip = tooLarge ? 'too_large' : null
         const key = pathKey(abs)
         const mtime = Math.floor(s.mtimeMs)
         batch.push(() => {
@@ -389,8 +500,9 @@ export class Indexer {
           if (!existing) {
             const rel = path.relative(folder.path, abs)
             insert.run(folderId, rel, key, entry.name, ext, tokenizeName(entry.name), tokenizePath(rel), s.size, mtime, status, skip, gen)
-          } else if (existing.size !== s.size || existing.mtime_ms !== mtime) {
-            markChanged.run(s.size, mtime, status, skip, gen, existing.id)
+          } else if (existing.size !== s.size || existing.mtime_ms !== mtime || tooLarge !== (existing.status === 'skipped')) {
+            // The last condition applies a changed size cap to files indexed under the old one.
+            markChanged.run(s.size, mtime, status, skip, gen, status, existing.id)
           } else {
             touch.run(gen, existing.id)
           }
@@ -416,7 +528,7 @@ export class Indexer {
   // ---------- hash ----------
 
   private async hashFile(r: { id: number; ext: string; content_id: number | null; abs: string }): Promise<void> {
-    const kind = kindForExt(r.ext)!
+    const kind = kindForExt(r.ext, { ocr: true })!
     let sha: string
     let size: number
     try {
@@ -455,7 +567,7 @@ export class Indexer {
 
   private async extractContent(row: { id: number; kind: Kind; extract_attempts: number; abs: string }): Promise<void> {
     try {
-      const doc = await extractFile(row.abs, row.kind)
+      const doc = await extractFile(row.abs, row.kind, { ocr: this.ocr })
       const chunks = chunkDocument(doc, row.kind)
       const insert = this.db.prepare(
         `INSERT INTO chunks(content_id, ord, text, char_start, char_end, page_start, page_end, section_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -475,6 +587,7 @@ export class Indexer {
       })()
       // New contents have no vectors yet; only re-extracted ones need their old vectors dropped.
       if (replaced > 0) this.vectors.removeContents(new Set([row.id]))
+      if (chunks.length) storeSignature(this.db, row.id, doc.text)
     } catch (err) {
       if (err instanceof ExtractError && err.code !== 'timeout' && err.code !== 'failed') {
         this.db.prepare("UPDATE contents SET extract_status = ?, embed_status = 'not_applicable' WHERE id = ?").run(err.code, row.id)
@@ -490,31 +603,37 @@ export class Indexer {
 
   // ---------- embed ----------
 
-  private async embedChunks(rows: { id: number; content_id: number; text: string; section_path: string | null; title: string | null }[]): Promise<void> {
-    const inputs = rows.map((r) => embeddingText(DOC_PREFIX, { text: r.text, section: r.section_path }, r.title))
+  private async embedChunks(rows: ChunkRow[], space: EmbeddingSpace, building: boolean): Promise<void> {
+    const inputs = rows.map((r) => embeddingText(space.docPrefix, { text: r.text, section: r.section_path }, r.title))
     let vectors: number[][]
     try {
-      vectors = await embed(EMBED_MODEL, inputs)
+      vectors = await embed(space.model, inputs)
+      if (space.dims && vectors.some((v) => v.length !== space.dims)) throw new OllamaError('bad_response', 'Embedding size changed')
     } catch (err) {
       if (err instanceof OllamaError && err.code === 'context_exceeded' && rows.length > 1) {
         // Isolate the offending chunk.
         const mid = Math.ceil(rows.length / 2)
-        await this.embedChunks(rows.slice(0, mid))
-        await this.embedChunks(rows.slice(mid))
+        await this.embedChunks(rows.slice(0, mid), space, building)
+        await this.embedChunks(rows.slice(mid), space, building)
         return
       }
       if (err instanceof OllamaError && (err.code === 'context_exceeded' || err.code === 'bad_response')) {
-        this.db.prepare("UPDATE contents SET embed_status = 'failed' WHERE id = ?").run(rows[0].content_id)
+        if (building) this.buildFailed.contents.add(rows[0].content_id)
+        else this.db.prepare("UPDATE contents SET embed_status = 'failed' WHERE id = ?").run(rows[0].content_id)
         return
       }
       this.embedBlockedUntil = Date.now() + 15_000
       if (err instanceof OllamaError) this.onAiFailure(err)
       return
     }
-    const insert = this.db.prepare('INSERT OR REPLACE INTO chunk_vectors(chunk_id, vec) VALUES (?, ?)')
+    noteSpaceFacts(this.db, space.id, { dims: vectors[0]?.length })
+    // The space may have been swapped out or cancelled while Ollama was working; then the vectors are dropped.
+    const insert = this.db.prepare(
+      'INSERT OR REPLACE INTO chunk_vectors(space_id, chunk_id, vec) SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM embedding_spaces WHERE id = ?)'
+    )
     const units = vectors.map(toUnitVec)
-    this.db.transaction(() => rows.forEach((r, i) => insert.run(r.id, vecToBuffer(units[i]))))()
-    rows.forEach((r, i) => this.vectors.add(r.id, r.content_id, units[i]))
+    this.db.transaction(() => rows.forEach((r, i) => insert.run(space.id, r.id, vecToBuffer(units[i]), space.id)))()
+    rows.forEach((r, i) => this.vectors.add(r.id, r.content_id, units[i], space.id))
   }
 
   // ---------- garbage collection ----------

@@ -1,0 +1,52 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 602 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(INVOICE 2025-109) Tj T*
+(Maya Lindqvist Consulting, Uppsala, Sweden. VAT no. SE870412441701) Tj T*
+(Date: 2025-09-01) Tj T*
+(Bill to: Orchid Logistics AB) Tj T*
+(Industrigatan 41, Norrkoping) Tj T*
+() Tj T*
+(Warehouse KPI dashboards: milestone 3, final go-live \(30%\) EUR 4,650.00) Tj T*
+() Tj T*
+(Subtotal: EUR 4,650.00) Tj T*
+(VAT 25%: EUR 1,162.50) Tj T*
+(Total due: EUR 5,812.50) Tj T*
+() Tj T*
+(Payment due within 30 days. Bank transfer to IBAN SE45 5000 0000 0583 9825 7466, BIC) Tj T*
+(ESSESESS.) Tj T*
+(Please quote the invoice number with your payment.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Invoice 2025-109) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000865 00000 n 
+0000000991 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1071
+%%EOF

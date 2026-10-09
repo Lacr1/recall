@@ -1,0 +1,78 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 1774 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Consulting Agreement) Tj T*
+(Version 2 - 16 September 2024) Tj T*
+() Tj T*
+(Between Fernhill Library Trust, a charitable trust running nine public libraries in) Tj T*
+(County Wicklow, Ireland \("the Client"\), and Maya Lindqvist Consulting, Uppsala, Sweden) Tj T*
+(\("the Consultant"\).) Tj T*
+() Tj T*
+(1. Assignment) Tj T*
+(The Consultant advises the Client on the migration of its library catalogue) Tj T*
+(\(approximately 186,000 records\) from the legacy LibraSys system to OpenShelf, including) Tj T*
+(a data cleaning plan, training for branch staff and a review of the public search) Tj T*
+(interface.) Tj T*
+() Tj T*
+(2. Term) Tj T*
+(From 16 September 2024 to 31 March 2025.) Tj T*
+() Tj T*
+(3. Fees) Tj T*
+(A day rate of EUR 680 excluding VAT, for up to 45 days. The Consultant invoices monthly) Tj T*
+(on the basis of timesheets approved by the Client. Invoices are payable within 30 days.) Tj T*
+() Tj T*
+(4. Expenses) Tj T*
+(Reasonable travel expenses are reimbursed at cost, capped at EUR 1,500 for the whole) Tj T*
+(term.) Tj T*
+() Tj T*
+(5. Confidentiality) Tj T*
+(The Consultant keeps all non-public information about the Client confidential, during) Tj T*
+(and after the assignment.) Tj T*
+() Tj T*
+(6. Intellectual property) Tj T*
+(Reports, designs and other work results produced under this agreement belong to the) Tj T*
+(Client once paid for.) Tj T*
+() Tj T*
+(7. Termination) Tj T*
+(Either party may end the agreement with 14 days written notice. Days worked up to the) Tj T*
+(end date are invoiced.) Tj T*
+() Tj T*
+(8. Governing law) Tj T*
+(This agreement is governed by the laws of Ireland.) Tj T*
+() Tj T*
+(Signed for the Client: ______________________ Signed for the Consultant:) Tj T*
+(______________________) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Fernhill contract v2) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000002038 00000 n 
+0000002164 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+2248
+%%EOF

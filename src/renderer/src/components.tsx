@@ -16,10 +16,12 @@ export function Highlighted({ text, ranges }: { text: string; ranges: HighlightR
 }
 
 const TYPE_LABEL: Record<string, string> = { pdf: 'PDF', docx: 'DOC', md: 'MD', markdown: 'MD', txt: 'TXT', log: 'TXT' }
+const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'bmp', 'tif', 'tiff', 'webp'])
 
 export function FileBadge({ ext }: { ext: string }) {
-  const label = TYPE_LABEL[ext] ?? (ext.length <= 4 ? ext.toUpperCase() : 'CODE')
-  const tone = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'doc' : ext === 'md' || ext === 'txt' ? 'text' : 'code'
+  const image = IMAGE_EXTS.has(ext)
+  const label = image ? 'IMG' : (TYPE_LABEL[ext] ?? (ext.length <= 4 ? ext.toUpperCase() : 'CODE'))
+  const tone = ext === 'pdf' ? 'pdf' : ext === 'docx' ? 'doc' : ext === 'md' || ext === 'txt' || image ? 'text' : 'code'
   return (
     <span className={`file-badge tone-${tone}`} aria-hidden="true">
       {label}

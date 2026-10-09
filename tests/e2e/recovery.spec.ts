@@ -3,7 +3,7 @@ import { closeSync, openSync, rmSync, statSync, writeSync } from 'node:fs'
 import path from 'node:path'
 import { assertIndexConsistent, openDatabase } from '../../src/engine/db'
 import { FakeOllama } from '../support/fake-ollama'
-import { CHOOSE_FOLDER, enginePid, expectAccessible, getStatus, launchRecall, waitForIndexed, type RecallRun } from './recall'
+import { CHOOSE_FOLDER, enginePid, expectAccessible, getStatus, launchRecall, resultOptions, waitForIndexed, type RecallRun } from './recall'
 
 // S3-04 recovery in the real app (plan doc 02 §5.13): the engine crashing while it indexes, the supervisor giving
 // up after repeated crashes, and a damaged index found on the next start. Run with RECALL_E2E_EXE set to cover the
@@ -50,7 +50,7 @@ test('the engine is killed three times while indexing: it restarts and the index
 
   await waitForIndexed(page)
   await page.getByRole('searchbox').fill('dishwasher warranty period')
-  await expect(page.getByRole('option').filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
+  await expect(resultOptions(page).filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
 })
 
 test('after a fourth crash it stops restarting and offers "Restart indexer"', async () => {
@@ -63,7 +63,7 @@ test('after a fourth crash it stops restarting and offers "Restart indexer"', as
   await expect.poll(() => enginePid(run.app)).toBeDefined()
   await expect(page.getByRole('searchbox')).toBeVisible()
   await page.getByRole('searchbox').fill('dishwasher warranty period')
-  await expect(page.getByRole('option').filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
+  await expect(resultOptions(page).filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
 })
 
 test('a damaged index is found on the next start and rebuilt from the same folders', async () => {
@@ -94,6 +94,6 @@ test('a damaged index is found on the next start and rebuilt from the same folde
   const status = await waitForIndexed(page)
   expect(status.folders.map((f) => f.path)).toEqual([corpus])
   await page.getByRole('searchbox').fill('dishwasher warranty period')
-  await expect(page.getByRole('option').filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
+  await expect(resultOptions(page).filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
   expect((await getStatus(page)).problem).toBeUndefined()
 })

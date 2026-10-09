@@ -106,6 +106,54 @@ export const MIGRATIONS: string[] = [
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+  `,
+  // v2 (S4-07, plan doc 05 §4.7–4.8): vectors belong to an embedding space, so a model change can build a new
+  // space in the background while search keeps using the active one. Existing vectors become space 1.
+  `
+  CREATE TABLE embedding_spaces (
+    id INTEGER PRIMARY KEY,
+    provider TEXT NOT NULL DEFAULT 'ollama',
+    model TEXT NOT NULL,
+    model_digest TEXT,
+    dims INTEGER,
+    doc_prefix TEXT NOT NULL,
+    query_prefix TEXT NOT NULL,
+    low_conf_cosine REAL,
+    status TEXT NOT NULL CHECK (status IN ('active','building','retired')),
+    created_at INTEGER NOT NULL,
+    activated_at INTEGER
+  );
+  CREATE UNIQUE INDEX idx_spaces_one_active ON embedding_spaces(status) WHERE status = 'active';
+  CREATE UNIQUE INDEX idx_spaces_one_building ON embedding_spaces(status) WHERE status = 'building';
+  INSERT INTO embedding_spaces(id, model, dims, doc_prefix, query_prefix, low_conf_cosine, status, created_at, activated_at)
+    VALUES (1, 'nomic-embed-text', 768, 'search_document: ', 'search_query: ', 0.6, 'active',
+            CAST(strftime('%s','now') AS INTEGER) * 1000, CAST(strftime('%s','now') AS INTEGER) * 1000);
+
+  CREATE TABLE chunk_vectors_v2 (
+    space_id INTEGER NOT NULL REFERENCES embedding_spaces(id) ON DELETE CASCADE,
+    chunk_id INTEGER NOT NULL REFERENCES chunks(id) ON DELETE CASCADE,
+    vec BLOB NOT NULL,
+    PRIMARY KEY (space_id, chunk_id)
+  ) WITHOUT ROWID;
+  INSERT INTO chunk_vectors_v2(space_id, chunk_id, vec) SELECT 1, chunk_id, vec FROM chunk_vectors;
+  DROP TABLE chunk_vectors;
+  ALTER TABLE chunk_vectors_v2 RENAME TO chunk_vectors;
+  CREATE INDEX idx_chunk_vectors_chunk ON chunk_vectors(chunk_id);
+  `,
+  // v3 (S4-04, plan doc 05 §4.11): MinHash signatures and their LSH bands, for version grouping. Contents read
+  // before this version get theirs from a backfill in the extract lane.
+  `
+  CREATE TABLE content_signatures (
+    content_id INTEGER PRIMARY KEY REFERENCES contents(id) ON DELETE CASCADE,
+    minhash BLOB NOT NULL
+  );
+  CREATE TABLE content_bands (
+    content_id INTEGER NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+    band INTEGER NOT NULL,
+    hash INTEGER NOT NULL,
+    PRIMARY KEY (band, hash, content_id)
+  ) WITHOUT ROWID;
+  CREATE INDEX idx_content_bands_content ON content_bands(content_id);
   `
 ]
 
@@ -186,8 +234,13 @@ export function assertIndexConsistent(db: DB): void {
     problems.push('linked file without content')
   if (q("SELECT count(*) n FROM contents c WHERE extract_status = 'ok' AND chunk_count <> (SELECT count(*) FROM chunks WHERE content_id = c.id)"))
     problems.push('chunk count differs from chunks')
-  if (q("SELECT count(*) n FROM chunks ch JOIN contents c ON c.id = ch.content_id LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id WHERE c.embed_status = 'done' AND v.chunk_id IS NULL"))
+  if (
+    q(`SELECT count(*) n FROM chunks ch JOIN contents c ON c.id = ch.content_id
+       LEFT JOIN chunk_vectors v ON v.chunk_id = ch.id AND v.space_id = (SELECT id FROM embedding_spaces WHERE status = 'active')
+       WHERE c.embed_status = 'done' AND v.chunk_id IS NULL`)
+  )
     problems.push('content marked embedded has chunks without vectors')
+  if (q("SELECT count(*) n FROM embedding_spaces WHERE status = 'active'") !== 1) problems.push('not exactly one active embedding space')
   if (db.pragma('quick_check', { simple: true }) !== 'ok') problems.push('SQLite quick_check failed')
   if ((db.pragma('foreign_key_check') as unknown[]).length) problems.push('foreign key violation')
   for (const table of ['chunks_fts', 'files_fts']) {

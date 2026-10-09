@@ -9,6 +9,9 @@ export function SettingsView({ status }: { status: AppStatus }) {
   const [info, setInfo] = useState<{ path: string; bytes: number }>()
   const [confirm, setConfirm] = useState(false)
   const [typed, setTyped] = useState('')
+  // Shown at once on a click; the engine's status confirms it a moment later.
+  const [ocr, setOcr] = useState(!!status.ocr)
+  useEffect(() => setOcr(!!status.ocr), [status.ocr])
 
   useEffect(() => {
     void window.recall.getDataInfo().then(setInfo)
@@ -27,6 +30,25 @@ export function SettingsView({ status }: { status: AppStatus }) {
       <section className="card">
         <h2 className="card-title">Local AI</h2>
         <AiPanel status={status} />
+      </section>
+
+      <section className="card">
+        <h2 className="card-title">Text in images</h2>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={ocr}
+            onChange={(e) => {
+              setOcr(e.target.checked)
+              void window.recall.setOcr(e.target.checked)
+            }}
+          />
+          Read text in images and scanned PDFs (OCR)
+        </label>
+        <p className="small muted">
+          English only. Runs on this computer and takes a few seconds per page, so a large folder of scans can take a while. While
+          this is off, Recall doesn’t open images at all.
+        </p>
       </section>
 
       <section className="card">

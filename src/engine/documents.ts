@@ -4,7 +4,14 @@ import type { DocumentView, FileRef } from '../shared/types'
 
 const MAX_VIEW_CHARS = 300_000
 
-export function readDocument(db: DB, fileId: number): DocumentView | null {
+/** A passage to locate: a [start, end) window of a chunk's text, as search evidence gives it. */
+export interface PassageRef {
+  chunkId: number
+  start: number
+  end: number
+}
+
+export function readDocument(db: DB, fileId: number, wanted: PassageRef[] = []): DocumentView | null {
   const file = db
     .prepare(
       `SELECT x.id fileId, x.name, f.path || '\\' || x.rel_path path, f.path folderPath, x.ext, x.size, x.mtime_ms mtimeMs, x.content_id
@@ -28,17 +35,22 @@ export function readDocument(db: DB, fileId: number): DocumentView | null {
 
   // Chunks are exact slices of the extracted text; stitch their non-overlapping parts.
   const chunks = file.content_id
-    ? (db.prepare('SELECT text, char_start, char_end FROM chunks WHERE content_id = ? ORDER BY ord').all(file.content_id) as {
-        text: string; char_start: number; char_end: number
+    ? (db.prepare('SELECT id, text, char_start, char_end FROM chunks WHERE content_id = ? ORDER BY ord').all(file.content_id) as {
+        id: number; text: string; char_start: number; char_end: number
       }[])
     : []
+  const want = new Map(wanted.map((w) => [w.chunkId, w]))
+  const passages: DocumentView['passages'] = []
   let text = ''
   let cursor = 0
   for (const c of chunks) {
+    if (c.char_end > cursor && cursor > 0 && c.char_start > cursor) text += '\n\n'
+    // Where the chunk starts in `text`: any part overlapping earlier chunks is already there, contiguously.
+    const viewStart = text.length - Math.max(0, cursor - c.char_start)
+    const w = want.get(c.id)
+    if (w) passages.push({ chunkId: c.id, start: viewStart + w.start, end: viewStart + w.end })
     if (c.char_end <= cursor) continue
-    const from = Math.max(cursor, c.char_start)
-    if (cursor > 0 && c.char_start > cursor) text += '\n\n'
-    text += c.text.slice(from - c.char_start)
+    text += c.text.slice(Math.max(cursor, c.char_start) - c.char_start)
     cursor = c.char_end
     if (text.length > MAX_VIEW_CHARS) break
   }
@@ -61,7 +73,8 @@ export function readDocument(db: DB, fileId: number): DocumentView | null {
     pageCount: content?.page_count ?? undefined,
     text: text.slice(0, MAX_VIEW_CHARS),
     truncated: text.length > MAX_VIEW_CHARS,
-    changedSinceIndexed: changed
+    changedSinceIndexed: changed,
+    passages: passages.filter((p) => p.end <= MAX_VIEW_CHARS).sort((a, b) => a.start - b.start)
   }
 }
 

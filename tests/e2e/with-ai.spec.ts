@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { CHAT_MODEL } from '../../src/shared/constants'
 import { FakeOllama } from '../support/fake-ollama'
-import { CHOOSE_FOLDER, expectAccessible, getStatus, launchRecall, waitForIndexed, type RecallRun } from './recall'
+import { CHOOSE_FOLDER, expectAccessible, getStatus, launchRecall, resultOptions, waitForIndexed, type RecallRun } from './recall'
 
 // E2E flows 2–6 from plan doc 07 §9, against a fake Ollama that starts without the search model.
 test.describe.configure({ mode: 'serial' })
@@ -70,7 +70,7 @@ test('suggests example searches from the indexed files, and moves the search box
   const example = (await examples.first().textContent())!.replace(/[“”]/g, '')
   await examples.first().click()
   await expect(heading).toBeHidden()
-  await expect(page.getByRole('option').first()).toBeVisible()
+  await expect(resultOptions(page).first()).toBeVisible()
   await page.waitForTimeout(1800) // a search is remembered once it has rested with results
   await page.getByRole('button', { name: 'Clear search' }).click()
   await expect(heading).toBeVisible()
@@ -92,7 +92,7 @@ test('shows placeholder results while a slow search runs', async () => {
     await page.getByRole('searchbox').fill('dishwasher warranty period')
     await expect(page.locator('.skeleton-card').first()).toBeVisible()
     await expect(page.getByRole('region', { name: 'Results' })).toHaveAttribute('aria-busy', 'true')
-    await expect(page.getByRole('option').filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
+    await expect(resultOptions(page).filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' })).toBeVisible()
     await expect(page.locator('.skeleton-card')).toHaveCount(0)
   } finally {
     ollama.embedDelayMs = 0
@@ -104,7 +104,7 @@ test('searches by meaning and keywords and explains each match', async () => {
   const { page } = run
   await page.getByRole('searchbox').fill('proposal with a 50% initial payment')
   await expect(page.locator('.results-meta')).toContainText('meaning + keywords')
-  const result = page.getByRole('option').filter({ hasText: 'Acme_Proposal_v2.pdf' })
+  const result = resultOptions(page).filter({ hasText: 'Acme_Proposal_v2.pdf' })
   await expect(result).toBeVisible()
   await result.click()
   const evidence = page.getByRole('complementary', { name: 'Evidence' })
@@ -114,27 +114,72 @@ test('searches by meaning and keywords and explains each match', async () => {
   await expectAccessible(page, 'search: hybrid results')
 
   await page.getByRole('searchbox').fill('Acme_Proposal_v3')
-  await expect(page.getByRole('option').filter({ hasText: 'Acme_Proposal_v3' }).getByText('2 copies')).toBeVisible()
+  await expect(resultOptions(page).filter({ hasText: 'Acme_Proposal_v3' }).getByText('2 copies')).toBeVisible()
 })
 
 test('opens and reveals files through the open-file guard', async () => {
   const { page } = run
   await page.getByRole('searchbox').fill('dishwasher warranty period')
-  await page.getByRole('option').filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' }).click()
+  await resultOptions(page).filter({ hasText: 'Dishwasher_DW-450_Manual.pdf' }).click()
   const evidence = page.getByRole('complementary', { name: 'Evidence' })
   await evidence.getByRole('button', { name: 'Open' }).click()
   await evidence.getByRole('button', { name: 'Show in folder' }).click()
   const expected = path.join(run.corpus, 'manuals', 'Dishwasher_DW-450_Manual.pdf')
   await expect.poll(run.opened).toEqual([expected, 'reveal:' + expected])
 
-  await evidence.getByRole('button', { name: 'Details' }).click()
+  await evidence.getByRole('button', { name: 'Details', exact: true }).click()
   const details = page.getByRole('dialog', { name: 'Document details' })
-  await expect(details.getByText(/Match 1 of \d+/)).toBeVisible()
+  // Opens at the first passage; stepping through matched words starts at the first one.
+  await expect(details.getByText(/Passage 1 of \d+/)).toBeVisible()
+  await expect(details.getByText(/\d+ matched words/)).toBeVisible()
   await details.getByRole('button', { name: 'Next match' }).click()
+  await expect(details.getByText(/Match 1 of \d+/)).toBeVisible()
+  await page.keyboard.press('F3')
   await expect(details.getByText(/Match 2 of \d+/)).toBeVisible()
   await expectAccessible(page, 'details')
   await page.keyboard.press('Escape')
   await expect(details).toBeHidden()
+})
+
+test('filters results, shows time words as chips and steps through passages (Stage 4)', async () => {
+  const { page } = run
+  const option = (name: string) => resultOptions(page).filter({ hasText: name })
+  const chips = page.getByRole('list', { name: 'Active filters' })
+
+  // The three Acme proposals are versions of one document: one result, the others listed with it (S4-04).
+  await page.getByRole('searchbox').fill('acme proposal payment')
+  await expect(option('Acme_Proposal_v2.pdf').getByText('3 versions', { exact: true })).toBeVisible()
+  await option('Acme_Proposal_v2.pdf').click()
+  const versions = page.getByRole('complementary', { name: 'Evidence' }).locator('.versions li')
+  await expect(versions).toHaveCount(3)
+  await expect(versions.first()).toContainText('Acme_Proposal_v3')
+  await expectAccessible(page, 'search: versions')
+
+  // With a PDF filter only the PDF version is left, so no versions are listed.
+  await page.getByRole('combobox', { name: 'File type' }).selectOption('pdf')
+  await expect(chips.getByText('PDF')).toBeVisible()
+  await expect(option('Acme_Proposal_v2.pdf')).toBeVisible()
+  await expect(option('Acme_Proposal_v2.pdf').getByText('3 versions', { exact: true })).toHaveCount(0)
+  await expect(option('.docx')).toHaveCount(0)
+  await expectAccessible(page, 'search: filtered')
+  await chips.getByRole('button', { name: 'Remove the PDF filter' }).click()
+  await expect(option('Acme_Proposal_v2.pdf').getByText('3 versions', { exact: true })).toBeVisible()
+
+  await page.getByRole('searchbox').fill('latest acme proposal')
+  await expect(chips.getByText('Newest first', { exact: true })).toBeVisible()
+  await chips.getByRole('button', { name: /rank newest first/ }).click()
+  await expect(page.getByText('Newest first', { exact: true })).toHaveCount(0)
+
+  await page.getByRole('searchbox').fill('dishwasher warranty period')
+  await option('Dishwasher_DW-450_Manual.pdf').click()
+  await page.getByRole('complementary', { name: 'Evidence' }).getByRole('button', { name: 'Show in document, passage 1' }).click()
+  const details = page.getByRole('dialog', { name: 'Document details' })
+  await expect(details.getByText(/Passage \d of \d/)).toBeVisible()
+  await expect(details.locator('.doc-passage.current')).toBeInViewport()
+  await expectAccessible(page, 'details: passages')
+  await page.keyboard.press('Escape')
+  await expect(details).toBeHidden()
+  await page.getByRole('button', { name: 'Clear search' }).click()
 })
 
 test('Ask answers with citations and declines without evidence', async () => {

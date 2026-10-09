@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 866 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Reducing Appointment No-shows: What the Research Says) Tj T*
+(A whitepaper by Remindly Research, 2025) Tj T*
+() Tj T*
+(Summary) Tj T*
+(Missed appointments cost healthcare providers between 5% and 15% of capacity. Across 31) Tj T*
+(published studies, automated reminders reduced no-shows by a median of 29%. Two) Tj T*
+(reminders \(one 2-3 days before, one on the day\) worked better than one.) Tj T*
+() Tj T*
+(What works) Tj T*
+(- Reminders that include an easy way to cancel or move the appointment.) Tj T*
+(- Messages in the patient's own language.) Tj T*
+(- Sending reminders at a time the patient is likely to read them, for example 18:00.) Tj T*
+() Tj T*
+(What does not work) Tj T*
+(- Charging a no-show fee without a reminder; it harms trust and barely changes) Tj T*
+(behaviour.) Tj T*
+(- Long messages with legal text.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Reducing appointment no-shows) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000001129 00000 n 
+0000001255 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1348
+%%EOF

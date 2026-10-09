@@ -5,18 +5,20 @@ import path from 'node:path'
 import { context } from './context'
 import { assertIndexConsistent, getSetting } from './db'
 import { Indexer, UserError } from './indexer'
-import { embed, getVersion, hasModel, listModels, OllamaError, pullModel } from './ollama'
+import { embed, getVersion, hasModel, isCloudModel, listModels, OllamaError, pullModel } from './ollama'
+import { activeSpace, baseModel, buildingSpace, cancelBuild, noteSpaceFacts, prefixesFor, startBuild, type EmbeddingSpace } from './spaces'
 import { SearchService } from './search'
 import { searchSuggestions } from './suggestions'
 import { toUnitVec, VectorIndex } from './vectors'
 import { runAsk } from './ask'
-import { readDocument } from './documents'
+import { readDocument, type PassageRef } from './documents'
+import { interpretQuery } from './temporal'
 import { foldersOf, matchFolders } from './folder-match'
 import { isSafeLocalPath, pathKey } from './paths'
 import { markCheckNextStart, markCleanShutdown, readFolderList, writeFolderList } from './index-files'
 import { isCorruption } from './recovery'
-import { CHAT_MODEL, EMBED_MODEL, QUERY_PREFIX } from '../shared/constants'
-import type { AiStatus, AppStatus, SearchResponse } from '../shared/types'
+import { CHAT_MODEL, EMBED_MODEL } from '../shared/constants'
+import type { AiStatus, AppStatus, SearchFilters, SearchResponse } from '../shared/types'
 
 const { port, dataDir, opened } = context()
 const db = opened.db
@@ -82,7 +84,21 @@ function saveFolderList(): void {
 saveFolderList()
 
 function getStatus(): AppStatus {
-  return { ai, progress: indexer.progress(), folders: indexer.listFolders(), rebuilt: rebuilt || undefined }
+  return {
+    ai,
+    progress: indexer.progress(),
+    folders: indexer.listFolders(),
+    rebuilt: rebuilt || undefined,
+    modelChange: indexer.buildProgress(),
+    ocr: indexer.ocrEnabled
+  }
+}
+
+// After a model change completes: cached query vectors belong to the old space.
+indexer.onSpaceActivated = () => {
+  queryCache.clear()
+  void probeAi()
+  scheduleStatus()
 }
 
 // ---------- local AI readiness ----------
@@ -97,8 +113,18 @@ async function probeAi(): Promise<void> {
     try {
       const version = await getVersion()
       const models = await listModels()
-      const ready = hasModel(models, EMBED_MODEL)
-      next = { ...ai, state: ready ? 'ready' : 'model_missing', ollamaVersion: version, chatAvailable: hasModel(models, CHAT_MODEL), error: undefined, pull: undefined }
+      const space = activeSpace(db)
+      const ready = hasModel(models, space.model)
+      if (ready) checkDigest(space, models)
+      next = {
+        ...ai,
+        state: ready ? 'ready' : 'model_missing',
+        embedModel: space.model,
+        ollamaVersion: version,
+        chatAvailable: hasModel(models, CHAT_MODEL),
+        error: undefined,
+        pull: undefined
+      }
     } catch {
       next = { ...ai, state: existsSync(OLLAMA_INSTALL) ? 'not_running' : 'not_installed', chatAvailable: false }
     }
@@ -110,12 +136,64 @@ async function probeAi(): Promise<void> {
   probeTimer = setTimeout(probeAi, ai.state === 'ready' ? 15_000 : 3_000)
 }
 
+const digestOf = (models: { name: string; digest: string }[], model: string) => models.find((m) => baseModel(m.name) === model)?.digest
+
+/**
+ * Plan doc 04 §5.5: the same model name with new weights gives incomparable vectors. The first digest seen is
+ * recorded; a different one later starts a background re-embed into a new space (unless a build is running).
+ */
+function checkDigest(space: EmbeddingSpace, models: { name: string; digest: string }[]): void {
+  const digest = digestOf(models, space.model)
+  if (!digest) return
+  if (!space.digest) noteSpaceFacts(db, space.id, { digest })
+  else if (space.digest !== digest && !buildingSpace(db)) {
+    console.log(`[engine] ${space.model} was updated in Ollama; re-embedding into a new space`)
+    startBuild(db, space.model, digest)
+    indexer.wakeLanes()
+    scheduleStatus()
+  }
+  const building = buildingSpace(db)
+  if (building) noteSpaceFacts(db, building.id, { digest: digestOf(models, building.model) })
+}
+
+/** S4-07: switch search to another installed embedding model. Search keeps working on the current one meanwhile. */
+async function setEmbedModel(params: { model: string }): Promise<void> {
+  const model = baseModel(String(params.model ?? '').trim())
+  const active = activeSpace(db)
+  if (!model || isCloudModel(model)) throw new UserError('MODEL_INVALID', 'Choose a model installed on this computer.')
+  if (model === active.model) {
+    cancelBuild(db)
+    scheduleStatus()
+    return
+  }
+  const models = await listModels().catch(() => {
+    throw new UserError('AI_UNAVAILABLE', 'Ollama is not running.')
+  })
+  if (!hasModel(models, model)) throw new UserError('MODEL_MISSING', `${model} is not installed in Ollama.`)
+  let dims: number
+  try {
+    dims = (await embed(model, [prefixesFor(model).doc + 'Recall checks that this model can embed text.'], { timeoutMs: 60_000 }))[0].length
+  } catch {
+    throw new UserError('MODEL_NOT_EMBEDDING', `${model} can’t be used for search: it doesn’t produce embeddings.`)
+  }
+  const space = startBuild(db, model, digestOf(models, model) ?? null)
+  noteSpaceFacts(db, space.id, { dims })
+  indexer.wakeLanes()
+  scheduleStatus()
+}
+
+/** Installed local models, for the model picker. Ollama doesn't say which ones embed; setEmbedModel checks. */
+async function listEmbedModels(): Promise<string[]> {
+  const models = await listModels().catch(() => [])
+  return models.map((m) => baseModel(m.name)).filter((n) => !isCloudModel(n) && n !== baseModel(CHAT_MODEL))
+}
+
 async function startPull(): Promise<void> {
   if (ai.state === 'pulling') return
   ai = { ...ai, state: 'pulling', pull: { status: 'starting', completed: 0, total: 0 }, error: undefined }
   scheduleStatus()
   try {
-    await pullModel(EMBED_MODEL, (p) => {
+    await pullModel(activeSpace(db).model, (p) => {
       ai = { ...ai, pull: p }
       scheduleStatus()
     })
@@ -132,11 +210,12 @@ const queryCache = new Map<string, Float32Array>()
 
 async function embedQuery(q: string): Promise<Float32Array | undefined> {
   if (ai.state !== 'ready') return undefined
-  const key = q.trim().toLowerCase()
+  const space = activeSpace(db)
+  const key = `${space.id}|${q.trim().toLowerCase()}`
   const hit = queryCache.get(key)
   if (hit) return hit
   try {
-    const [v] = await embed(EMBED_MODEL, [QUERY_PREFIX + q], { timeoutMs: 15_000 })
+    const [v] = await embed(space.model, [space.queryPrefix + q], { timeoutMs: 15_000 })
     const unit = toUnitVec(v)
     queryCache.set(key, unit)
     if (queryCache.size > 100) queryCache.delete(queryCache.keys().next().value!)
@@ -149,23 +228,31 @@ async function embedQuery(q: string): Promise<Float32Array | undefined> {
 
 let latestSearch = 0
 
-async function search(params: { requestId: number; query: string }): Promise<SearchResponse | null> {
+// Plan doc 04 §6.6: the query's time words become ordering and a date filter (temporal.ts).
+const interpret = (q: string, filters: SearchFilters) => interpretQuery(q, filters)
+
+async function search(params: { requestId: number; query: string; filters?: SearchFilters }): Promise<SearchResponse | null> {
   const t0 = performance.now()
   latestSearch = params.requestId
   const q = String(params.query ?? '').slice(0, 500)
-  const vec = await embedQuery(q)
+  const { query, intent, opts } = interpret(q, params.filters ?? {})
+  // "latest" or "last week" alone leaves nothing to embed; the search then lists matching files.
+  const wantVec = query.trim() !== ''
+  const vec = wantVec ? await embedQuery(query) : undefined
   if (params.requestId !== latestSearch) return null // superseded while embedding
-  const { results, lowConfidence } = searchService.search(q, vec)
+  const { results, lowConfidence } = searchService.search(query, vec, opts)
   const p = indexer.progress()
+  const meaning = wantVec ? !!vec : ai.state === 'ready'
   return {
     requestId: params.requestId,
     query: q,
-    mode: vec ? 'hybrid' : 'keyword',
-    modeReason: vec ? undefined : ai.state === 'ready' ? 'Local AI did not respond' : 'Local AI is not set up',
+    mode: meaning ? 'hybrid' : 'keyword',
+    modeReason: meaning ? undefined : ai.state === 'ready' ? 'Local AI did not respond' : 'Local AI is not set up',
     tookMs: Math.round(performance.now() - t0),
     results,
     lowConfidence,
-    partialIndex: p.filesPending > 0 || p.readDone < p.readTotal || p.embedDone < p.embedTotal || p.scanning
+    partialIndex: p.filesPending > 0 || p.readDone < p.readTotal || p.embedDone < p.embedTotal || p.scanning,
+    temporal: intent
   }
 }
 
@@ -181,9 +268,9 @@ function getSearchSuggestions(): string[] {
 
 /** For voice (plan 12 S8-07): the same search, but it never supersedes the window's own search-as-you-type. */
 async function voiceSearch(params: { query: string }) {
-  const q = String(params.query ?? '').slice(0, 500)
-  const vec = await embedQuery(q)
-  const { results, lowConfidence } = searchService.search(q, vec)
+  const { query, opts } = interpret(String(params.query ?? '').slice(0, 500), {})
+  const vec = query.trim() ? await embedQuery(query) : undefined
+  const { results, lowConfidence } = searchService.search(query, vec, opts)
   const p = indexer.progress()
   return {
     lowConfidence,
@@ -241,7 +328,7 @@ const handlers: Record<string, Handler> = {
     asks.get(p.askId)?.abort()
     return true
   },
-  getDocument: (p: { fileId: number }) => readDocument(db, Number(p.fileId)),
+  getDocument: (p: { fileId: number; passages?: PassageRef[] }) => readDocument(db, Number(p.fileId), p.passages),
   listFailures: () => indexer.listFailures(),
   addFolder: (p: { path: string }) => {
     if (!isSafeLocalPath(p.path)) throw new UserError('FOLDER_INVALID', 'Only local folders can be added.')
@@ -263,6 +350,13 @@ const handlers: Record<string, Handler> = {
     void startPull()
     return true
   },
+  listEmbedModels,
+  setEmbedModel,
+  cancelEmbedModelChange: () => {
+    cancelBuild(db)
+    scheduleStatus()
+  },
+  setOcr: (p: { on: boolean }) => indexer.setOcr(p.on === true),
   recheckAi: () => probeAi(),
   // Main-only: resolve a file id to its path and folder root for the open-file guard.
   resolveFile: (p: { fileId: number }) =>

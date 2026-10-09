@@ -1,0 +1,81 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 2334 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Tidewater Labs AB - Information Security Policy) Tj T*
+(Document owner: Head of Operations | Version: 2024.1 | Approved: 2 April 2024) Tj T*
+(Applies to: all employees, contractors and interns. Review cycle: yearly.) Tj T*
+() Tj T*
+(Purpose) Tj T*
+(This policy protects customer booking and payment data and the systems Tidewater Labs) Tj T*
+(runs for its clients.) Tj T*
+() Tj T*
+(Accounts and passwords) Tj T*
+(Passwords must be at least 12 characters and stored in the company password manager) Tj T*
+(\(Bitwarden\). Multi-factor authentication is required for all admin accounts. Shared) Tj T*
+(accounts are not allowed.) Tj T*
+() Tj T*
+(Laptops and devices) Tj T*
+(Company laptops use full-disk encryption \(BitLocker or FileVault\) and lock the screen) Tj T*
+(after 10 minutes of inactivity. Lost or stolen devices are reported immediately.) Tj T*
+() Tj T*
+(Access control) Tj T*
+(Access is granted per role and removed on the last working day. Access rights are) Tj T*
+(reviewed once a year. Production systems are only reachable through the company VPN.) Tj T*
+() Tj T*
+(Backups) Tj T*
+(Production databases are backed up daily and backups are kept for 30 days.) Tj T*
+() Tj T*
+(Security incidents) Tj T*
+(Anyone who suspects a security incident, such as a leaked password, a phishing click or) Tj T*
+(unexpected access to customer data, reports it to security@tidewaterlabs.se within 72) Tj T*
+(hours. Personal data breaches are assessed for notification to the data protection) Tj T*
+(authority.) Tj T*
+() Tj T*
+(Roles) Tj T*
+(The Head of Operations owns this policy and keeps it up to date. Managers make sure) Tj T*
+(their team members have read it and understand it. Every employee and contractor is) Tj T*
+(responsible for following it in their daily work.) Tj T*
+() Tj T*
+(Policy review) Tj T*
+(This policy is reviewed once a year, or earlier after a serious incident or a change in) Tj T*
+(the law. Changes are announced in the company channel and take effect 14 days after) Tj T*
+(approval.) Tj T*
+() Tj T*
+(Exceptions and breaches) Tj T*
+(Exceptions must be approved in writing by the Head of Operations and are reviewed at the) Tj T*
+(next policy review. Breaches of this policy may lead to disciplinary action. Questions) Tj T*
+(about this policy go to ops@tidewaterlabs.se.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Information Security Policy 2024) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000002598 00000 n 
+0000002724 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+2820
+%%EOF

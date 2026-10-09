@@ -1,0 +1,14 @@
+INVOICE 2025-118
+Maya Lindqvist Consulting, Uppsala, Sweden. VAT no. SE870412441701
+Date: 2025-11-10
+Bill to: Bluebird Dental Clinics AB
+Kungsgatan 57, Uppsala
+
+Patient reminder service: kickoff instalment (50%)               EUR 4,750.00
+
+Subtotal: EUR 4,750.00
+VAT 25%: EUR 1,187.50
+Total due: EUR 5,937.50
+
+Payment due within 30 days. Bank transfer to IBAN SE45 5000 0000 0583 9825 7466, BIC ESSESESS.
+Please quote the invoice number with your payment.

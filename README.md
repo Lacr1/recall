@@ -29,11 +29,11 @@ Index data lives in `%LOCALAPPDATA%\Recall\data` (override with `RECALL_DATA_DIR
 ## Test
 
 ```
-npm test             # 216 unit + integration tests incl. a 20-kill crash loop; no model or network needed
+npm test             # 244 unit + integration tests incl. a 20-kill crash loop; no model or network needed
                      # (CRASH_SEED=<n> npm test picks other kill points)
 npm run test:live    # needs Ollama: retrieval eval (writes eval-results/latest.md) + Ask checks;
                      # also the voice models on synthetic speech (needs resources/voice)
-npm run test:e2e     # builds, then drives the real app with a fake Ollama: 34 flows (20 voice: fake mic, popup, onboarding) + accessibility scans
+npm run test:e2e     # builds, then drives the real app with a fake Ollama: 36 flows (20 voice: fake mic, popup, onboarding) + accessibility scans
                      # (RECALL_E2E_EXE=dist/win-unpacked/Recall.exe npx playwright test runs them on the packaged app)
 npm run audit:network  # needs Ollama: full app flow, fails if anything connects outside this computer
                        # (RECALL_AUDIT_EXE=dist/win-unpacked/Recall.exe audits the packaged app)
@@ -49,9 +49,9 @@ electron . --smoke-test=<folder> [--smoke-screenshots=<dir>]
 electron . --voice-smoke=tests/fixtures/voice/recall-find-my-resume.wav   # voice process: wake word + transcript
 ```
 
-## Demo script (≈ 3 minutes)
+## Demo script (≈ 4 minutes)
 
-1. Start Ollama. Launch Recall. On first run, onboarding shows the privacy promise, then the local-AI check, then folder selection. Add `tests/fixtures/corpus` (a synthetic set of a freelancer's files) or a real folder that does not sync to OneDrive.
+1. Start Ollama. Launch Recall. After the splash screen, onboarding walks through five steps: the privacy promise, the local-AI check, folders, voice, and ready. Add `tests/fixtures/corpus` (a synthetic set of a freelancer's files) or a real folder that does not sync to OneDrive. On the Voice step, switch voice **On** and say "Recall" to see "Heard you".
 2. Watch **Reading files** then **Understanding** progress. Searching works immediately.
 3. Search `proposal with a 50% initial payment` → `Acme_Proposal_v2.pdf` on page 2, with the passage highlighted and *why it matched*.
 4. Search `emails landing in junk folder` → the retro note says "go to spam"; it matches by meaning, with no shared keywords.
@@ -59,20 +59,26 @@ electron . --voice-smoke=tests/fixtures/voice/recall-find-my-resume.wav   # voic
 6. **Details** → full extracted text with match navigation. **Open** opens the original file.
 7. **Ask**: `What payment terms did I propose to Acme, and did they change?` → a cited answer: 50% → 40/30/30, with the newer file noted.
 8. Ask `When does my passport expire?` → Recall declines, because there isn't enough evidence.
-9. **Folders**: failures are shown in plain language (damaged PDF, scanned PDF with no text). **Settings**: local AI status, data location and size, delete all data.
-10. Stop Ollama. Recall falls back to keyword search and shows a banner. Restart Ollama and it recovers on its own.
+9. **Voice**: switch to another app (Notepad), then say "Recall, find the dishwasher manual". The red panda popup appears near the pointer without taking focus and copies the file's path; paste it into Notepad. Say "the second one" to copy another match. Then say "Recall", "yes", and "What payment terms did I propose to Acme?" for a cited answer read aloud.
+10. **Folders**: failures are shown in plain language (damaged PDF, scanned PDF with no text). **Settings**: local AI status, data location and size, delete all data.
+11. Stop Ollama. Recall falls back to keyword search and shows a banner. Restart Ollama and it recovers on its own.
 
 ## Architecture (short)
 
 ```
-Renderer (React, sandboxed, no Node)  ──typed IPC──▶  Main (window, dialogs, open-file guard)
-                                                        │ MessagePort RPC
-                                                        ▼
-                                  Engine utilityProcess: SQLite (FTS5 + vectors), scanner,
-                                  extract (pdf.js, mammoth), chunker, hybrid search, Ask
-                                                        │ HTTP, 127.0.0.1 only
-                                                        ▼
-                                              Ollama (nomic-embed-text, qwen2.5:3b)
+Renderer (React, sandboxed, no Node)  ──typed IPC──▶  Main (window, popup, tray, dialogs, open-file guard)
+  │ mic audio, 16 kHz                                   │ MessagePort RPC              │ events
+  │ (transferred MessagePort)                           ▼                              │
+  │                               Engine utilityProcess: SQLite (FTS5 + vectors),      │
+  │                               scanner, extract (pdf.js, mammoth), chunker,         │
+  │                               hybrid search, Ask                                   │
+  │                                                     │ HTTP, 127.0.0.1 only         │
+  │                                                     ▼                              │
+  │                                           Ollama (nomic-embed-text, qwen2.5:3b)    │
+  └──────────────────────────────▶  Voice utilityProcess (sherpa-onnx): wake word,  ───┘
+                                     end-of-speech detection, Moonshine speech-to-text
 ```
+
+Voice is off until the user turns it on. Audio goes from the renderer straight to the voice process and is never written to disk; the voice process only sends wake and transcript events to main. Details are in [docs/app-plan/12-voice-assistant.md](docs/app-plan/12-voice-assistant.md) and [ADR-0015](docs/adr/0015-on-device-voice.md).
 
 The search pipeline combines keyword (BM25) results, all-terms keyword results, meaning (cosine) results and file-name matches with Reciprocal Rank Fusion. Results are grouped per file, identical copies are collapsed, and each result carries a deterministic match reason. Details are in [docs/app-plan/04-search-and-retrieval.md](docs/app-plan/04-search-and-retrieval.md).

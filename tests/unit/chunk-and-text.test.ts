@@ -3,7 +3,10 @@ import { chunkDocument, embeddingText } from '../../src/engine/chunk'
 import { decodeText, splitMarkdown, splitParagraphs } from '../../src/engine/extract'
 import { ftsQuery, fuse, makeSnippet } from '../../src/engine/search'
 import { findTerms, queryTerms } from '../../src/shared/text'
-import { isInsideRoot, isSafeLocalPath, isSafeToOpen, tokenizeName } from '../../src/engine/paths'
+import {
+  isExcludedDir, isExcludedFile, isInsideRoot, isSafeLocalPath, isSafeToOpen, sizeCapFor, tokenizeName
+} from '../../src/engine/paths'
+import { MAX_DATA_BYTES, MAX_FILE_BYTES, MAX_PDF_BYTES, MAX_TEXT_BYTES } from '../../src/shared/constants'
 
 const longParagraph = (n: number, word = 'payment') =>
   Array.from({ length: n }, (_, i) => `Sentence ${i} talks about the ${word} schedule in detail.`).join(' ')
@@ -117,5 +120,26 @@ describe('path safety', () => {
 
   it('splits file names into words', () => {
     expect(tokenizeName('Acme_ProposalV3-final.docx')).toBe('Acme Proposal V 3 final')
+  })
+})
+
+describe('indexing rules', () => {
+  it('skips dependency, cache and app-data folders', () => {
+    for (const d of ['node_modules', 'vendor', 'site-packages', 'AppData', 'Temp', '.gradle']) expect(isExcludedDir(d)).toBe(true)
+    for (const d of ['Documents', 'clients', 'src']) expect(isExcludedDir(d)).toBe(false)
+  })
+
+  it('skips lockfiles and minified or bundled output', () => {
+    for (const f of ['package-lock.json', 'pnpm-lock.yaml', 'jquery.min.js', 'app.bundle.js', 'site.MIN.css', '~$report.docx'])
+      expect(isExcludedFile(f)).toBe(true)
+    for (const f of ['package.json', 'session.ts', 'notes.md', 'mint.js']) expect(isExcludedFile(f)).toBe(false)
+  })
+
+  it('caps plain-text and data files well below documents', () => {
+    expect(sizeCapFor('pdf', 'pdf')).toBe(MAX_PDF_BYTES)
+    expect(sizeCapFor('docx', 'docx')).toBe(MAX_FILE_BYTES)
+    expect(sizeCapFor('code', 'ts')).toBe(MAX_TEXT_BYTES)
+    expect(sizeCapFor('text', 'log')).toBe(MAX_DATA_BYTES)
+    expect(sizeCapFor('code', 'csv')).toBe(MAX_DATA_BYTES)
   })
 })

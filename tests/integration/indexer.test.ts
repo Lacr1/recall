@@ -114,7 +114,10 @@ describe('indexing the fixture corpus', () => {
     expect(suggestions).toHaveLength(3)
     expect(new Set(suggestions.map((s) => s.contentId)).size).toBe(3)
     for (const s of suggestions) {
-      expect(query(s.query).results.slice(0, 3).map((r) => r.contentId), s.query).toContain(s.contentId)
+      // The file may be shown as a result, a copy, or one of a result's other versions.
+      const target = new Set(search.filesFor(s.contentId).map((f) => f.fileId))
+      const shown = query(s.query).results.slice(0, 3).flatMap((r) => [r.primary, ...r.copies, ...r.versions].map((f) => f.fileId))
+      expect(shown.some((id) => target.has(id)), s.query).toBe(true)
     }
   })
 
@@ -148,6 +151,17 @@ describe('keeping the index current', () => {
     const stale = query('dentist accountant VAT').results.flatMap((r) => r.evidence.map((e) => e.snippet))
     expect(stale.some((t) => t.includes('dentist'))).toBe(false)
     expect(names('Sintra tram pasteis')).not.toContain('lisbon-itinerary.txt')
+    assertIndexConsistent(db)
+  })
+
+  it('drops a file that grows past the size cap from search', async () => {
+    const invoice = path.join(docs, 'clients/bluebird/invoice-2025-118.txt')
+    writeFileSync(invoice, 'Invoice line for the quarterly retainer.\n'.repeat(60_000)) // about 2.4 MB
+    indexer.rescanFolder(1)
+    await settle()
+    const evidence = query('patient reminder kickoff instalment').results.flatMap((r) => r.evidence.map((e) => e.snippet))
+    expect(evidence.some((t) => t.includes('kickoff instalment'))).toBe(false)
+    expect(indexer.listFailures().map((f) => `${f.name}: ${f.reason}`)).toContain('invoice-2025-118.txt: Too large to index')
     assertIndexConsistent(db)
   })
 

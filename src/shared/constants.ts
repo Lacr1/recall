@@ -10,6 +10,9 @@ export const OLLAMA_URL = 'http://127.0.0.1:11434'
 
 export const MAX_FILE_BYTES = 50 * 1024 * 1024
 export const MAX_PDF_BYTES = 200 * 1024 * 1024
+// Plain-text files this big are almost always dumps or generated output, and every chunk costs an embedding call.
+export const MAX_TEXT_BYTES = 2 * 1024 * 1024
+export const MAX_DATA_BYTES = 512 * 1024
 
 // Methods the renderer may call. Main rejects anything not listed here.
 export const RENDERER_METHODS = [
@@ -23,6 +26,10 @@ export const RENDERER_METHODS = [
   'retryFailed',
   'setPaused',
   'pullModel',
+  'listEmbedModels',
+  'setEmbedModel',
+  'cancelEmbedModelChange',
+  'setOcr',
   'ask',
   'cancelAsk',
   'deleteAllData'

@@ -1,5 +1,6 @@
-// S0-05: vector search at scale (plan doc 07 §6). Writes eval-results/bench-vectors.md.
-// Synthetic unit vectors stand in for embeddings; latency doesn't depend on their content.
+// S0-05 / S4-09: vector search at scale (plan doc 07 §6), float32 and int8-with-rescoring indexes.
+// Writes eval-results/bench-vectors.md. Synthetic unit vectors stand in for embeddings; latency doesn't
+// depend on their content. Run with --expose-gc for stable memory numbers.
 import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -39,14 +40,13 @@ function unitVec(rand: () => number): Float32Array {
 const pct = (xs: number[], p: number) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(xs.length * p))]
 const mb = (b: number) => (b / 1024 / 1024).toFixed(0)
 
-it('measures exact in-memory vector search at scale', async () => {
+it('measures in-memory vector search at scale', async () => {
   const rows: string[] = []
   const rand = rng(42)
   const dbPath = path.join(dir, 'bench.db')
   const db = openDatabase(dbPath)
-  db.prepare("INSERT INTO contents(id, sha256, kind, size, created_at) VALUES (1, 'x', 'text', 0, 0)").run()
   const insertChunk = db.prepare("INSERT INTO chunks(id, content_id, ord, text, char_start, char_end) VALUES (?, ?, ?, '', 0, 0)")
-  const insertVec = db.prepare('INSERT INTO chunk_vectors(chunk_id, vec) VALUES (?, ?)')
+  const insertVec = db.prepare('INSERT INTO chunk_vectors(space_id, chunk_id, vec) VALUES (1, ?, ?)')
   // Spread chunks over many contents so the content filter is realistic.
   const insertContent = db.prepare("INSERT INTO contents(id, sha256, kind, size, created_at) VALUES (?, ?, 'text', 0, 0)")
 
@@ -65,48 +65,51 @@ it('measures exact in-memory vector search at scale', async () => {
     have = size
     db.pragma('wal_checkpoint(TRUNCATE)')
     const dbBytes = statSync(dbPath).size
-
-    global.gc?.()
-    const rss0 = process.memoryUsage().rss
-    const index = new VectorIndex(db)
-    const tl = performance.now()
-    expect(index.size).toBe(size) // triggers load
-    const loadMs = performance.now() - tl
-    const rssDelta = process.memoryUsage().rss - rss0
-
     const queries = Array.from({ length: QUERIES }, () => unitVec(rand))
-    index.search(queries[0], 100) // warm-up (JIT)
-    const plain: number[] = []
-    for (const q of queries) {
-      const t = performance.now()
-      const hits = index.search(q, 100)
-      plain.push(performance.now() - t)
-      expect(hits).toHaveLength(100)
+
+    for (const quantized of [false, true]) {
+      global.gc?.()
+      const rss0 = process.memoryUsage().rss
+      const index = new VectorIndex(db, { quantized })
+      const tl = performance.now()
+      expect(index.size).toBe(size) // triggers load
+      const loadMs = performance.now() - tl
+      const rssDelta = process.memoryUsage().rss - rss0
+
+      index.search(queries[0], 100) // warm-up (JIT)
+      const plain: number[] = []
+      for (const q of queries) {
+        const t = performance.now()
+        const hits = index.search(q, 100)
+        plain.push(performance.now() - t)
+        expect(hits).toHaveLength(100)
+      }
+      // Same search with the "live contents" filter the app applies (every content allowed here).
+      const live = new Set(Array.from({ length: Math.ceil(size / 8) + 2 }, (_, i) => i))
+      const filtered: number[] = []
+      for (const q of queries) {
+        const t = performance.now()
+        index.search(q, 100, (cid) => live.has(cid))
+        filtered.push(performance.now() - t)
+      }
+      rows.push(
+        `| ${size.toLocaleString()} | ${quantized ? 'int8 + rescoring' : 'float32'} | ${pct(plain, 0.5).toFixed(1)} | ${pct(plain, 0.95).toFixed(1)} | ${pct(filtered, 0.95).toFixed(1)} | ${loadMs.toFixed(0)} | ${mb(index.vectorBytes)} | ${mb(rssDelta)} | ${mb(dbBytes)} | ${insertPerSec.toFixed(0)} |`
+      )
+      console.log(rows.at(-1))
+      await new Promise((r) => setTimeout(r, 50)) // let the vitest worker answer RPC between runs
     }
-    // Same search with the "live contents" filter the app applies (every content allowed here).
-    const live = new Set(Array.from({ length: Math.ceil(size / 8) + 2 }, (_, i) => i))
-    const filtered: number[] = []
-    for (const q of queries) {
-      const t = performance.now()
-      index.search(q, 100, (cid) => live.has(cid))
-      filtered.push(performance.now() - t)
-    }
-    rows.push(
-      `| ${size.toLocaleString()} | ${pct(plain, 0.5).toFixed(1)} | ${pct(plain, 0.95).toFixed(1)} | ${pct(filtered, 0.95).toFixed(1)} | ${loadMs.toFixed(0)} | ${mb(rssDelta)} | ${mb(dbBytes)} | ${insertPerSec.toFixed(0)} |`
-    )
-    console.log(rows.at(-1))
-    await new Promise((r) => setTimeout(r, 50)) // let the vitest worker answer RPC between sizes
   }
   db.close()
 
   const report = [
-    `# Vector search benchmark (S0-05), ${new Date().toISOString()}`,
+    `# Vector search benchmark (S0-05, S4-09), ${new Date().toISOString()}`,
     '',
-    `Machine: ${os.cpus()[0].model.trim()}, ${(os.totalmem() / 1024 ** 3).toFixed(1)} GB RAM, Node ${process.version}. ${EMBED_DIMS}-dim float32 unit vectors, top-100, ${QUERIES} queries per size.`,
+    `Machine: ${os.cpus()[0].model.trim()}, ${(os.totalmem() / 1024 ** 3).toFixed(1)} GB RAM, Node ${process.version}. ${EMBED_DIMS}-dim unit vectors, top-100, ${QUERIES} queries per size.`,
     'Each database row holds an empty chunk text, so the DB size counts vectors and row overhead only (no text or FTS index).',
+    'int8 + rescoring keeps int8 vectors in memory and re-scores the best 200 from the float32 vectors in the database.',
     '',
-    '| Chunks | Search p50 (ms) | Search p95 (ms) | p95 with live-content filter (ms) | Load from DB (ms) | Memory added (MB, RSS) | DB size (MB) | Inserts/s |',
-    '|---|---|---|---|---|---|---|---|',
+    '| Chunks | Index | Search p50 (ms) | Search p95 (ms) | p95 with live-content filter (ms) | Load from DB (ms) | Vector arrays (MB) | Memory added (MB, RSS) | DB size (MB) | Inserts/s |',
+    '|---|---|---|---|---|---|---|---|---|---|',
     ...rows
   ].join('\n')
   mkdirSync('eval-results', { recursive: true })

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { CHOOSE_FOLDER, launchRecall, waitForIndexed, type RecallRun } from '../e2e/recall'
+import { CHOOSE_FOLDER, launchRecall, resultOptions, waitForIndexed, type RecallRun } from '../e2e/recall'
 
 // S3-07 automated network audit (plan doc 07 §8): drive the whole app with the real Ollama and record every network
 // attempt three ways — Recall's own guard (Node, main + engine), Chromium's net log (renderer, network service)
@@ -64,9 +64,9 @@ test('audit: whole app flow with real Ollama', async () => {
   }
   // Details, open, show in folder.
   await page.getByRole('searchbox').fill('dishwasher warranty period')
-  await page.getByRole('option').first().click()
+  await resultOptions(page).first().click()
   const evidence = page.getByRole('complementary', { name: 'Evidence' })
-  await evidence.getByRole('button', { name: 'Details' }).click()
+  await evidence.getByRole('button', { name: 'Details', exact: true }).click()
   await page.keyboard.press('Escape')
   await evidence.getByRole('button', { name: 'Open' }).click()
   await evidence.getByRole('button', { name: 'Show in folder' }).click()

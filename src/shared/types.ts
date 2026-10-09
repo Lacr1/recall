@@ -55,6 +55,10 @@ export interface AppStatus {
   problem?: { code: IndexProblemCode; message: string }
   /** The index was rebuilt from the saved folder list on this start. */
   rebuilt?: boolean
+  /** A switch to another embedding model is under way (S4-07); search uses `ai.embedModel` until it finishes. */
+  modelChange?: { model: string; done: number; total: number }
+  /** Text in images and scanned PDFs is read with OCR (S4-06). */
+  ocr?: boolean
 }
 
 export interface HighlightRange {
@@ -67,6 +71,36 @@ export interface Evidence {
   snippet: string
   highlights: HighlightRange[]
   location?: string
+  /** Where the snippet sits in its chunk's text, so the document view can find the passage. */
+  chunkStart: number
+  chunkEnd: number
+}
+
+/** File types the search filter offers; each maps to one or more extracted kinds. */
+export type TypeFilter = 'pdf' | 'docx' | 'notes' | 'code' | 'images'
+
+export interface DateRange {
+  /** Inclusive, ms since epoch. */
+  from: number
+  /** Exclusive, ms since epoch. */
+  to: number
+  label: string
+}
+
+export interface SearchFilters {
+  type?: TypeFilter
+  folderId?: number
+  modified?: DateRange
+  /** The user removed the chips the query's time words produced, so search the words as typed. */
+  ignoreTemporal?: boolean
+}
+
+/** What the query's time words were taken to mean (plan doc 04 §6.6). */
+export interface TemporalIntent {
+  /** "latest", "newest", …: recent files rank higher. */
+  newest: boolean
+  /** "last week", "in March", …: applied as a modified-date filter unless the user picked one. */
+  range?: DateRange
 }
 
 export interface FileRef {
@@ -83,11 +117,19 @@ export type MatchReason =
   | { kind: 'terms'; terms: string[] }
   | { kind: 'meaning'; location?: string }
   | { kind: 'filename' }
+  /** The most recently modified of the top matches, for queries asking for the latest version. */
+  | { kind: 'newest' }
+  /** Listed because it passes the filters; the query had no words to match. */
+  | { kind: 'filters' }
+  /** One of `count` versions of the same document (S4-04); `newest` when this one was modified last. */
+  | { kind: 'versions'; count: number; newest: boolean }
 
 export interface SearchResult {
   contentId: number
   primary: FileRef
   copies: FileRef[]
+  /** Other versions of this document (near-duplicates with changes), newest first (S4-04). */
+  versions: FileRef[]
   title?: string
   evidence: Evidence[]
   reasons: MatchReason[]
@@ -103,6 +145,8 @@ export interface SearchResponse {
   results: SearchResult[]
   lowConfidence: boolean
   partialIndex: boolean
+  /** Set when the query had time words, so the screen can show them as removable chips. */
+  temporal?: TemporalIntent
 }
 
 export interface FailureItem {
@@ -122,6 +166,8 @@ export interface DocumentView {
   text: string
   truncated: boolean
   changedSinceIndexed: boolean
+  /** The requested evidence passages located in `text`, in document order. */
+  passages: (HighlightRange & { chunkId: number })[]
 }
 
 export interface AskSource {

@@ -1,0 +1,57 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 1035 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Kodo RV-9 Robot Vacuum - Quick Start) Tj T*
+() Tj T*
+(1. Place the charging dock against a wall with 0.5 m free on each side and 1.5 m in) Tj T*
+(front.) Tj T*
+(2. Charge the robot fully before the first run \(about 4 hours\).) Tj T*
+(3. Install the Kodo Home app and add the robot over 2.4 GHz Wi-Fi. 5 GHz networks are) Tj T*
+(not supported.) Tj T*
+(4. The first run builds a map of your home. Open all doors and pick up cables and socks.) Tj T*
+(5. In the app you can draw no-go zones, for example around the dog bowl.) Tj T*
+() Tj T*
+(Maintenance) Tj T*
+(Empty the dust bin after every run. Clean the main brush every week and replace it every) Tj T*
+(6 to 12 months. Replace the filter every 3 months.) Tj T*
+() Tj T*
+(Status lights and errors) Tj T*
+(Blinking red with error 2: the main brush is stuck; remove hair and threads. Error 5:) Tj T*
+(the bumper is stuck. Error 8: the robot cannot find the dock.) Tj T*
+() Tj T*
+(Warranty) Tj T*
+(12 months on the robot, 6 months on the battery.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Kodo RV-9 Quick Start) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000001299 00000 n 
+0000001425 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1510
+%%EOF

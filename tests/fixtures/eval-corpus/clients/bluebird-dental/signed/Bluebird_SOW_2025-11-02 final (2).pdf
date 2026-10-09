@@ -1,0 +1,82 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 2233 >>
+stream
+BT /F1 11 Tf 14 TL 72 760 Td
+(Statement of Work - Patient Reminder Service) Tj T*
+(Client: Bluebird Dental Clinics AB) Tj T*
+(Supplier: Maya Lindqvist Consulting) Tj T*
+(Date: 2 November 2025 \(final\)) Tj T*
+() Tj T*
+(Background) Tj T*
+(Bluebird Dental Clinics operates four clinics in Uppsala and Enkoping. About 18% of) Tj T*
+(booked appointments are missed without notice, which costs the clinics an estimated EUR) Tj T*
+(210,000 a year in idle chair time.) Tj T*
+() Tj T*
+(Service) Tj T*
+(A patient reminder service that sends reminders 48 hours before each appointment by SMS) Tj T*
+(and email, with a link to confirm or cancel. A second, SMS-only reminder is sent 2 hours) Tj T*
+(before the appointment.) Tj T*
+() Tj T*
+(Deliverables) Tj T*
+(- A reminder scheduler connected to the clinics' DentaBook booking system.) Tj T*
+(- Message templates in English and Swedish.) Tj T*
+(- An opt-out page for patients who do not want reminders.) Tj T*
+(- A monthly report of no-show rates per clinic.) Tj T*
+(- Handover documentation and one training session for reception staff.) Tj T*
+() Tj T*
+(Roles and responsibilities) Tj T*
+(Bluebird provides API access to DentaBook, a test clinic and one contact person in each) Tj T*
+(clinic. The Supplier designs, builds and configures the service and supports reception) Tj T*
+(staff during the first two weeks.) Tj T*
+() Tj T*
+(Commercial terms) Tj T*
+(Fixed price of EUR 9,500, payable in two equal instalments: half on kickoff and half on) Tj T*
+(acceptance. Support after go-live is billed at EUR 95 per hour. SMS costs are passed) Tj T*
+(through at cost.) Tj T*
+() Tj T*
+(Acceptance) Tj T*
+(The Client confirms acceptance within 10 business days of go-live. If the Client raises) Tj T*
+(no defects in that period, the service counts as accepted.) Tj T*
+() Tj T*
+(Data protection) Tj T*
+(Patient names, phone numbers and appointment times are processed under the data) Tj T*
+(processing agreement signed on 28 October 2025. Message logs are deleted after 90 days.) Tj T*
+() Tj T*
+(Timeline) Tj T*
+(Kickoff on 10 November 2025. Go-live on 12 January 2026.) Tj T*
+() Tj T*
+(Change requests) Tj T*
+(Changes to scope are estimated in hours and approved by email before work starts.) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+6 0 obj
+<< /Title (Bluebird SOW final) /Producer (Recall eval fixtures) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000002497 00000 n 
+0000002623 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+2705
+%%EOF

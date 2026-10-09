@@ -1,6 +1,7 @@
 import path from 'node:path'
+import { MAX_DATA_BYTES, MAX_FILE_BYTES, MAX_PDF_BYTES, MAX_TEXT_BYTES } from '../shared/constants'
 
-export type Kind = 'text' | 'markdown' | 'code' | 'pdf' | 'docx'
+export type Kind = 'text' | 'markdown' | 'code' | 'pdf' | 'docx' | 'image'
 
 const KIND_BY_EXT: Record<string, Kind> = {
   txt: 'text', log: 'text', text: 'text',
@@ -14,16 +15,22 @@ const CODE_EXTS = new Set(
     'json yaml yml toml ini xml csv vue svelte lua r dart scala').split(' ')
 )
 
-export function kindForExt(ext: string): Kind | undefined {
+/** Read with OCR, and only indexed while OCR is on (S4-06). */
+const IMAGE_EXTS = new Set('png jpg jpeg bmp tif tiff webp'.split(' '))
+
+export function kindForExt(ext: string, opts: { ocr?: boolean } = {}): Kind | undefined {
   if (KIND_BY_EXT[ext]) return KIND_BY_EXT[ext]
   if (CODE_EXTS.has(ext)) return 'code'
+  if (opts.ocr && IMAGE_EXTS.has(ext)) return 'image'
   return undefined
 }
 
 // Directories never worth indexing; matched by name anywhere in the tree.
 const EXCLUDED_DIRS = new Set([
-  '.git', '.svn', '.hg', 'node_modules', '.venv', 'venv', '__pycache__', '.next', '.nuxt', 'dist', 'build', 'out',
-  'target', 'bin', 'obj', '.idea', '.vscode', '.cache', 'coverage', '$recycle.bin', 'system volume information'
+  '.git', '.svn', '.hg', 'node_modules', '.venv', 'venv', 'env', '__pycache__', '.next', '.nuxt', 'dist', 'build', 'out',
+  'target', 'bin', 'obj', '.idea', '.vscode', '.cache', 'coverage', '$recycle.bin', 'system volume information',
+  'vendor', 'bower_components', 'jspm_packages', 'site-packages', 'pods', 'deriveddata', 'storybook-static',
+  'appdata', '__macosx', 'temp', 'tmp', 'logs'
 ])
 
 export function isExcludedDir(name: string): boolean {
@@ -31,9 +38,24 @@ export function isExcludedDir(name: string): boolean {
   return EXCLUDED_DIRS.has(lower) || lower.startsWith('.')
 }
 
+// Generated files with an indexed extension: lockfiles and minified or bundled output.
+const EXCLUDED_FILES = new Set(['package-lock.json', 'npm-shrinkwrap.json', 'pnpm-lock.yaml', 'yarn.lock', 'composer.lock'])
+const GENERATED_FILE = /\.(min|bundle|chunk)\.(js|mjs|cjs|css)$/
+
 export function isExcludedFile(name: string): boolean {
   // Office lock files and hidden dotfiles.
-  return name.startsWith('~$') || name.startsWith('.')
+  if (name.startsWith('~$') || name.startsWith('.')) return true
+  const lower = name.toLowerCase()
+  return EXCLUDED_FILES.has(lower) || GENERATED_FILE.test(lower)
+}
+
+const DATA_EXTS = new Set('log csv json xml sql'.split(' '))
+
+/** Size above which a file is skipped as too large. */
+export function sizeCapFor(kind: Kind, ext: string): number {
+  if (kind === 'pdf') return MAX_PDF_BYTES
+  if (kind === 'docx' || kind === 'image') return MAX_FILE_BYTES
+  return DATA_EXTS.has(ext) ? MAX_DATA_BYTES : MAX_TEXT_BYTES
 }
 
 /** Windows paths are case-insensitive, so keys are lower-cased. */

@@ -24,10 +24,12 @@
     "package": "electron-vite build && electron-builder --win nsis"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
     "better-sqlite3": "13.0.3",
     "mammoth": "1.13.0",
     "pdfjs-dist": "6.4.299",
-    "sherpa-onnx-node": "1.13.8"
+    "sherpa-onnx-node": "1.13.8",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0",

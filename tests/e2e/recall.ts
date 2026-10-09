@@ -118,6 +118,11 @@ export async function tabTo(page: Page, name: string | RegExp): Promise<void> {
   throw new Error(`"${name}" was not reachable with Tab`)
 }
 
+/** Search results; scoped to the results list because the filter dropdowns have options too. */
+export function resultOptions(page: Page) {
+  return page.getByRole('listbox', { name: 'Matching files' }).getByRole('option')
+}
+
 /** axe-core scan of the current screen; serious and critical violations fail the test (plan doc 07 §9). */
 export async function expectAccessible(page: Page, screen: string): Promise<void> {
   if (!(await page.evaluate(() => 'axe' in window))) await page.evaluate(AXE_SOURCE)
