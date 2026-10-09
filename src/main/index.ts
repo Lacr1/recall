@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, session, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainInvokeEvent } from 'electron'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readdir, realpath, rm, stat } from 'node:fs/promises'
@@ -7,11 +7,14 @@ import { EngineError, EngineSupervisor } from './engine'
 import { runSmokeTest } from './smoke'
 import { isInsideRoot, isSafeLocalPath, isSafeToOpen } from '../engine/paths'
 import { RENDERER_METHODS } from '../shared/constants'
+import type { FolderSuggestion, SuggestedFolderId } from '../shared/types'
 
 // Index data lives in LocalAppData, not Roaming, so roaming profiles never sync it (plan doc 05 §2).
 const DATA_DIR = process.env.RECALL_DATA_DIR || path.join(process.env.LOCALAPPDATA ?? app.getPath('userData'), 'Recall', 'data')
 const OLLAMA_APP = path.join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Ollama', 'ollama app.exe')
 const DEV_URL = process.env.ELECTRON_RENDERER_URL
+
+const SUGGESTED_FOLDERS: Record<SuggestedFolderId, string> = { documents: 'Documents', desktop: 'Desktop', downloads: 'Downloads' }
 
 let win: BrowserWindow | undefined
 
@@ -60,7 +63,8 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     title: 'Recall',
-    backgroundColor: '#f7f7f5',
+    // Matches --bg so the splash appears without a light flash in dark mode.
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#151617' : '#f7f7f5',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -151,15 +155,34 @@ function registerIpc(): void {
 
   handle('getDataInfo', async () => ({ path: DATA_DIR, bytes: await dirSize(DATA_DIR) }))
 
-  // The folder path comes from the native dialog in main, never from the renderer.
-  handle('addFolder', async () => {
-    const res = await dialog.showOpenDialog(win!, { title: 'Choose a folder for Recall to remember', properties: ['openDirectory'] })
-    if (res.canceled || !res.filePaths[0]) return { cancelled: true }
+  const addFolderPath = async (folderPath: string) => {
     try {
-      return { folder: await engine.call('addFolder', { path: res.filePaths[0] }) }
+      return { folder: await engine.call('addFolder', { path: folderPath }) }
     } catch (err) {
       return { error: err instanceof EngineError ? err.message : 'Could not add this folder.' }
     }
+  }
+
+  // Folder paths come from the native dialog or Windows' known folders in main, never from the renderer.
+  handle('addFolder', async () => {
+    const res = await dialog.showOpenDialog(win!, { title: 'Choose a folder for Recall to remember', properties: ['openDirectory'] })
+    if (res.canceled || !res.filePaths[0]) return { cancelled: true }
+    return addFolderPath(res.filePaths[0])
+  })
+
+  handle('getFolderSuggestions', async () => {
+    const out: FolderSuggestion[] = []
+    for (const [id, label] of Object.entries(SUGGESTED_FOLDERS) as [SuggestedFolderId, string][]) {
+      const folderPath = app.getPath(id)
+      if (await isDirectory(folderPath)) out.push({ id, label, path: folderPath })
+    }
+    return out
+  })
+
+  handle('addSuggestedFolder', (p) => {
+    const id = String(p.id)
+    if (!Object.hasOwn(SUGGESTED_FOLDERS, id)) throw new Error('Invalid folder')
+    return addFolderPath(app.getPath(id as SuggestedFolderId))
   })
 
   handle('openFile', async (p) => {
@@ -224,4 +247,12 @@ async function dirSize(dir: string): Promise<number> {
     // Missing directory counts as zero.
   }
   return total
+}
+
+async function isDirectory(p: string): Promise<boolean> {
+  try {
+    return (await stat(p)).isDirectory()
+  } catch {
+    return false
+  }
 }

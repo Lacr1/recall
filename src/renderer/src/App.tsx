@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { AppStatus, AskEvent } from '../../shared/types'
-import { Icon } from './components'
+import { Icon, Logo } from './components'
 import { Onboarding } from './views/Onboarding'
+import { Splash } from './views/Splash'
 import { SearchView } from './views/SearchView'
 import { AskView } from './views/AskView'
 import { FoldersView } from './views/FoldersView'
@@ -11,6 +12,8 @@ import { StatusBar } from './views/StatusBar'
 export type View = 'search' | 'ask' | 'folders' | 'settings'
 
 const ONBOARDED_KEY = 'recall.onboarded'
+// First-time users see the splash at least this long so it doesn't flash before onboarding.
+const FIRST_RUN_SPLASH_MS = 1400
 
 function readOnboarded(): boolean {
   try {
@@ -27,6 +30,13 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>()
   const [askListeners] = useState(() => new Set<(e: AskEvent) => void>())
   const [engineNotice, setEngineNotice] = useState(false)
+  const [splashDone, setSplashDone] = useState(onboarded)
+
+  useEffect(() => {
+    if (splashDone) return
+    const t = setTimeout(() => setSplashDone(true), FIRST_RUN_SPLASH_MS)
+    return () => clearTimeout(t)
+  }, [splashDone])
 
   useEffect(() => {
     const off = window.recall.onEvent((msg) => {
@@ -53,7 +63,7 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  if (!status) return <div className="splash">Starting Recall…</div>
+  if (!status || !splashDone) return <Splash />
 
   const finishOnboarding = () => {
     try {
@@ -85,7 +95,7 @@ export function App() {
   return (
     <div className="app">
       <nav className="rail" aria-label="Main">
-        <div className="brand" aria-hidden="true">R</div>
+        <Logo size={36} className="brand" />
         {nav.map((n) => (
           <button
             key={n.id}

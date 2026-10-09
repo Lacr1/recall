@@ -26,8 +26,14 @@ export function FileBadge({ ext }: { ext: string }) {
   )
 }
 
-export function Icon({ name }: { name: 'search' | 'ask' | 'folder' | 'settings' }) {
-  const paths: Record<string, string> = {
+export type IconName = 'search' | 'ask' | 'folder' | 'settings' | 'laptop' | 'shield' | 'lock'
+
+export function Icon({ name }: { name: IconName }) {
+  const paths: Record<IconName, string> = {
+    laptop: 'M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v10h2v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2h2V5Zm2 1v9h12V6H6Z',
+    shield:
+      'M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5l8-3Zm0 2.1L6 6.4V11c0 3.9 2.5 7.4 6 8.9 3.5-1.5 6-5 6-8.9V6.4l-6-2.3Zm3.3 5.2 1.4 1.4-5.7 5.7-3.4-3.4 1.4-1.4 2 2 4.3-4.3Z',
+    lock: 'M12 2a5 5 0 0 1 5 5v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3ZM7 12v8h10v-8H7Z',
     search: 'M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z',
     ask: 'M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-4.4 3.3A1 1 0 0 1 3 19.5V5a1 1 0 0 1 1-1Zm1 2v11.5L8.3 15H19V6H5Zm3 3h8v2H8V9Zm0 3h5v2H8v-2Z',
     folder: 'M3 5a1 1 0 0 1 1-1h6l2 2h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5Zm2 1v12h14V8h-7.83l-2-2H5Z',
@@ -37,6 +43,18 @@ export function Icon({ name }: { name: 'search' | 'ask' | 'folder' | 'settings' 
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor">
       <path d={paths[name]} fillRule="evenodd" />
+    </svg>
+  )
+}
+
+/** Recall's mark: a folder with a magnifier on the brand tile. Colours come from theme tokens via CSS. */
+export function Logo({ size, className = '' }: { size: number; className?: string }) {
+  return (
+    <svg className={`logo ${className}`} viewBox="0 0 64 64" width={size} height={size} aria-hidden="true">
+      <rect className="logo-tile" width="64" height="64" rx="16" />
+      <path className="logo-folder" d="M14 22a4 4 0 0 1 4-4h9l4 4h15a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4Z" />
+      <circle className="logo-lens" cx="30" cy="31" r="6" />
+      <path className="logo-lens" d="M34.5 35.5 39 40" />
     </svg>
   )
 }
