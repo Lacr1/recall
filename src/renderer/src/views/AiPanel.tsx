@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import type { AppStatus } from '../../../shared/types'
+import nomicUrl from '../assets/nomic.png'
+import ollamaUrl from '../assets/ollama.png'
+import qwenUrl from '../assets/qwen.png'
 import { ConfirmDialog } from '../components'
 import { formatBytes } from '../format'
 
@@ -28,9 +31,14 @@ export function AiPanel({ status }: { status: AppStatus }) {
   return (
     <div className="ai-panel">
       <div className="ai-row">
-        <div>
-          <div className="ai-row-title">Ollama</div>
-          <div className="ai-row-sub">Free app that runs AI models on this computer</div>
+        <div className="ai-name">
+          <span className="ai-logo">
+            <img src={ollamaUrl} alt="" width={28} height={28} draggable={false} />
+          </span>
+          <div>
+            <div className="ai-row-title">Ollama</div>
+            <div className="ai-row-sub">Free app that runs AI models on this computer</div>
+          </div>
         </div>
         <div className={`ai-state ${o.ok ? 'ok' : 'warn'}`}>{o.ok ? '● ' : '○ '}{o.text}</div>
         <div className="ai-actions">
@@ -54,9 +62,14 @@ export function AiPanel({ status }: { status: AppStatus }) {
       </div>
 
       <div className="ai-row">
-        <div>
-          <div className="ai-row-title">Search model</div>
-          <div className="ai-row-sub">{ai.embedModel} · lets Recall search by meaning</div>
+        <div className="ai-name">
+          <span className="ai-logo">
+            <img src={nomicUrl} alt="" width={22} height={22} draggable={false} />
+          </span>
+          <div>
+            <div className="ai-row-title">Search model</div>
+            <div className="ai-row-sub">{ai.embedModel} · lets Recall search by meaning</div>
+          </div>
         </div>
         <div className={`ai-state ${modelReady ? 'ok' : 'warn'}`}>
           {modelReady ? '● Ready' : ai.state === 'pulling' ? `Downloading${pct !== undefined ? ` ${pct}%` : '…'}` : ai.state === 'model_missing' ? '○ Not downloaded' : '○ Needs Ollama'}
@@ -80,9 +93,14 @@ export function AiPanel({ status }: { status: AppStatus }) {
       )}
 
       <div className="ai-row">
-        <div>
-          <div className="ai-row-title">Answer model (optional)</div>
-          <div className="ai-row-sub">{ai.chatModel} · used by Ask your files</div>
+        <div className="ai-name">
+          <span className="ai-logo">
+            <img src={qwenUrl} alt="" width={24} height={24} draggable={false} />
+          </span>
+          <div>
+            <div className="ai-row-title">Answer model (optional)</div>
+            <div className="ai-row-sub">{ai.chatModel} · used by Ask Reca</div>
+          </div>
         </div>
         <div className={`ai-state ${ai.chatAvailable ? 'ok' : 'muted'}`}>{ai.chatAvailable ? '● Ready' : '○ Not installed'}</div>
         <div className="ai-actions" />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppStatus } from '../../../shared/types'
 import type { VoiceSensitivity, VoiceSettings, VoiceStatus } from '../../../shared/voice'
+import { Icon } from '../components'
 
 type Message = { text: string; mic?: boolean }
 
@@ -86,6 +87,7 @@ export function VoicePanel({ status, mode }: { status: AppStatus; mode: 'onboard
 
   return (
     <div className="voice-panel">
+      {mode === 'settings' && <WakeWord state={voice.state} />}
       <div className="voice-switch" role="radiogroup" aria-labelledby={`voice-label-${mode}`}>
         <span className="voice-switch-label" id={`voice-label-${mode}`}>
           Voice
@@ -167,6 +169,42 @@ export function VoicePanel({ status, mode }: { status: AppStatus; mode: 'onboard
           {answersNeedModel && <p className="hint">Finding files by voice works now. Answering questions needs the answer model.</p>}
         </>
       )}
+    </div>
+  )
+}
+
+/** Settings → Voice leads with the wake word itself, so people notice they can just say it. */
+function WakeWord({ state }: { state: VoiceStatus['state'] }) {
+  const badge =
+    state === 'listening'
+      ? { text: 'Listening now', tone: 'ok' }
+      : state === 'off'
+        ? { text: 'Voice is off', tone: 'off' }
+        : state === 'muted'
+          ? { text: 'Muted', tone: 'off' }
+          : state === 'starting'
+            ? { text: 'Starting…', tone: 'off' }
+            : { text: 'Needs attention', tone: 'warn' }
+  return (
+    <div className="wake-word">
+      <span className="wake-word-mic">
+        <Icon name="mic" />
+      </span>
+      <div className="wake-word-body">
+        <div className="wake-word-head">
+          <span className="wake-word-label">Your wake word</span>
+          <span className={`wake-word-badge ${badge.tone}`}>{badge.text}</span>
+        </div>
+        <p className="wake-word-phrase">“Recall”</p>
+        <p className="wake-word-text">
+          Say it from any app, then say what you need. Files and answers appear next to your mouse pointer.
+        </p>
+        <div className="wake-word-examples">
+          <span className="wake-word-try">Try:</span>
+          <span className="wake-word-example">“Recall, find my resume”</span>
+          <span className="wake-word-example">“Recall, what payment terms did I propose to Acme?”</span>
+        </div>
+      </div>
     </div>
   )
 }

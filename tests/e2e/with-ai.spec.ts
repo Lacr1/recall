@@ -164,7 +164,15 @@ test('Ask answers with citations and declines without evidence', async () => {
   await expect(page.locator('.answer-q')).toHaveText('Who won the chess olympiad?')
   await expect(page.locator('.insufficient')).toBeVisible()
   expect(ollama.requests.filter((r) => r.path === '/api/chat').length).toBe(chats)
-})
+
+  // Each finished question is kept in the history and can be read again without asking the model.
+  const history = page.getByRole('complementary', { name: 'History' })
+  await expect(history.getByRole('listitem')).toHaveCount(3)
+  await history.getByRole('button', { name: /^What payment terms/ }).click()
+  await expect(page.locator('.answer-q')).toHaveText('What payment terms did I propose to Acme, and did they change?')
+  await expect(page.locator('.disclaimer')).toBeVisible()
+  expect(ollama.requests.filter((r) => r.path === '/api/chat').length).toBe(chats)
+  await expectAccessible(page, 'ask: history')})
 
 test('falls back to keywords when Ollama stops, and recovers on its own', async () => {
   const { page } = run

@@ -27,7 +27,7 @@ export function FileBadge({ ext }: { ext: string }) {
   )
 }
 
-export type IconName = 'search' | 'ask' | 'folder' | 'settings' | 'laptop' | 'shield' | 'lock'
+export type IconName = 'search' | 'ask' | 'folder' | 'settings' | 'laptop' | 'shield' | 'lock' | 'mic'
 
 export function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, string> = {
@@ -37,6 +37,7 @@ export function Icon({ name }: { name: IconName }) {
     lock: 'M12 2a5 5 0 0 1 5 5v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3ZM7 12v8h10v-8H7Z',
     search: 'M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z',
     ask: 'M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-4.4 3.3A1 1 0 0 1 3 19.5V5a1 1 0 0 1 1-1Zm1 2v11.5L8.3 15H19V6H5Zm3 3h8v2H8V9Zm0 3h5v2H8v-2Z',
+    mic: 'M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Zm-1 3v6a1 1 0 0 0 2 0V5a1 1 0 0 0-2 0Zm-5 6h2a4 4 0 0 0 8 0h2a6 6 0 0 1-5 5.92V20h3v2H8v-2h3v-3.08A6 6 0 0 1 6 11Z',
     folder: 'M3 5a1 1 0 0 1 1-1h6l2 2h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5Zm2 1v12h14V8h-7.83l-2-2H5Z',
     settings:
       'M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-1.2-8h2.4l.5 2.6 1.7.7 2.2-1.5 1.7 1.7-1.5 2.2.7 1.7 2.5.4v2.4l-2.5.5-.7 1.7 1.5 2.2-1.7 1.7-2.2-1.5-1.7.7-.5 2.5h-2.4l-.5-2.5-1.7-.7-2.2 1.5-1.7-1.7 1.5-2.2-.7-1.7L2 13.2v-2.4l2.6-.5.7-1.7-1.5-2.2 1.7-1.7 2.2 1.5 1.7-.7.4-2.5Z'

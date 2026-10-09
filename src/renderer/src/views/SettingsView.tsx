@@ -31,7 +31,6 @@ export function SettingsView({ status }: { status: AppStatus }) {
 
       <section className="card">
         <h2 className="card-title">Voice</h2>
-        <p className="small muted">Say “Recall” from any app to find a file or ask about your files.</p>
         <VoicePanel status={status} mode="settings" />
       </section>
 
